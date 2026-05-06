@@ -107,6 +107,39 @@ final class MenuBuilderTests: XCTestCase {
         XCTAssertEqual(closeRow?.allowsKeyEquivalentWhenHidden, true)
     }
 
+    @MainActor
+    func testMenuPerformsCommandOneWhileOpen() {
+        let snapshot = builder.snapshot(accessState: .fullAccess, events: [], now: Date(), calendar: calendar)
+        let target = MenuShortcutTarget()
+        let menu = builder.makeMenu(from: snapshot, target: target)
+
+        XCTAssertTrue(menu.performKeyEquivalent(with: keyEvent(characters: "1", modifierFlags: [.command])))
+        XCTAssertEqual(target.openCalendarCount, 1)
+        XCTAssertEqual(target.openSettingsCount, 0)
+    }
+
+    @MainActor
+    func testMenuPerformsCommandCommaWhileOpen() {
+        let snapshot = builder.snapshot(accessState: .fullAccess, events: [], now: Date(), calendar: calendar)
+        let target = MenuShortcutTarget()
+        let menu = builder.makeMenu(from: snapshot, target: target)
+
+        XCTAssertTrue(menu.performKeyEquivalent(with: keyEvent(characters: ",", modifierFlags: [.command])))
+        XCTAssertEqual(target.openCalendarCount, 0)
+        XCTAssertEqual(target.openSettingsCount, 1)
+    }
+
+    @MainActor
+    func testMenuShortcutIgnoresCapsLockButRejectsExtraMeaningfulModifiers() {
+        let snapshot = builder.snapshot(accessState: .fullAccess, events: [], now: Date(), calendar: calendar)
+        let target = MenuShortcutTarget()
+        let menu = builder.makeMenu(from: snapshot, target: target)
+
+        XCTAssertTrue(menu.performKeyEquivalent(with: keyEvent(characters: ",", modifierFlags: [.command, .capsLock])))
+        XCTAssertFalse(menu.performKeyEquivalent(with: keyEvent(characters: ",", modifierFlags: [.command, .shift])))
+        XCTAssertEqual(target.openSettingsCount, 1)
+    }
+
     private func event(title: String, start: Date, end: Date) -> CalendarEvent {
         CalendarEvent(
             id: UUID().uuidString,
@@ -129,6 +162,34 @@ final class MenuBuilderTests: XCTestCase {
         components.hour = hour
         components.minute = minute
         return components.date!
+    }
+
+    private func keyEvent(characters: String, modifierFlags: NSEvent.ModifierFlags) -> NSEvent {
+        NSEvent.keyEvent(
+            with: .keyDown,
+            location: .zero,
+            modifierFlags: modifierFlags,
+            timestamp: 0,
+            windowNumber: 0,
+            context: nil,
+            characters: characters,
+            charactersIgnoringModifiers: characters,
+            isARepeat: false,
+            keyCode: 0
+        )!
+    }
+}
+
+private final class MenuShortcutTarget: NSObject {
+    private(set) var openCalendarCount = 0
+    private(set) var openSettingsCount = 0
+
+    @objc func openCalendarApp() {
+        openCalendarCount += 1
+    }
+
+    @objc func openSettings() {
+        openSettingsCount += 1
     }
 }
 

@@ -72,6 +72,54 @@ struct CalendarMenuSnapshot: Equatable {
     let footerRows: [CalendarMenuRow]
 }
 
+final class TrayMenu: NSMenu {
+    fileprivate static let significantModifierFlags: NSEvent.ModifierFlags = [.command, .control, .option, .shift]
+
+    override func performKeyEquivalent(with event: NSEvent) -> Bool {
+        if let item = items.first(where: { $0.matchesKeyEquivalent(event) }) {
+            cancelTracking()
+            performAction(for: item)
+            return true
+        }
+
+        if items.contains(where: { $0.hasKeyEquivalentKey(for: event) }) {
+            return false
+        }
+
+        return super.performKeyEquivalent(with: event)
+    }
+
+    private func performAction(for item: NSMenuItem) {
+        guard let action = item.action else {
+            return
+        }
+
+        NSApp.sendAction(action, to: item.target, from: item)
+    }
+}
+
+private extension NSMenuItem {
+    func hasKeyEquivalentKey(for event: NSEvent) -> Bool {
+        event.type == .keyDown
+            && !keyEquivalent.isEmpty
+            && event.charactersIgnoringModifiers?.lowercased() == keyEquivalent.lowercased()
+    }
+
+    func matchesKeyEquivalent(_ event: NSEvent) -> Bool {
+        guard hasKeyEquivalentKey(for: event),
+              isEnabled,
+              (!isHidden || allowsKeyEquivalentWhenHidden),
+              action != nil
+        else {
+            return false
+        }
+
+        let eventFlags = event.modifierFlags.intersection(TrayMenu.significantModifierFlags)
+        let itemFlags = keyEquivalentModifierMask.intersection(TrayMenu.significantModifierFlags)
+        return eventFlags == itemFlags
+    }
+}
+
 struct MenuBuilder {
     func snapshot(
         accessState: CalendarAccessState,
@@ -112,7 +160,7 @@ struct MenuBuilder {
     }
 
     func makeMenu(from snapshot: CalendarMenuSnapshot, target: AnyObject) -> NSMenu {
-        let menu = NSMenu()
+        let menu = TrayMenu()
 
         for section in snapshot.sections {
             if !section.title.isEmpty {
