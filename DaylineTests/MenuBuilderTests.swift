@@ -67,9 +67,21 @@ final class MenuBuilderTests: XCTestCase {
 
         XCTAssertEqual(snapshot.sections[0].rows.map(\.title), [
             "Calendar access denied",
+            "Enable calendar access in System Settings to show upcoming events.",
             "Open Calendar Privacy Settings..."
         ])
-        XCTAssertEqual(snapshot.sections[0].rows[1].action, .openPrivacySettings)
+        XCTAssertEqual(snapshot.sections[0].rows[2].action, .openPrivacySettings)
+    }
+
+    func testWriteOnlyStateShowsFullAccessRequiredAction() {
+        let snapshot = builder.snapshot(accessState: .writeOnly, events: [], now: Date(), calendar: calendar)
+
+        XCTAssertEqual(snapshot.sections[0].rows.map(\.title), [
+            "Full calendar access required",
+            "Dayline can only write calendar events. Enable full access in System Settings so it can read upcoming events.",
+            "Open Calendar Privacy Settings..."
+        ])
+        XCTAssertEqual(snapshot.sections[0].rows[2].action, .openPrivacySettings)
     }
 
     func testFooterRowsExposeMenuKeyEquivalents() {

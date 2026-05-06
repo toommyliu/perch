@@ -4,7 +4,8 @@ import Foundation
 @MainActor
 final class MenuBarController: NSObject {
     private let statusItem: NSStatusItem
-    private let calendarProvider: CalendarProviding
+    private let calendarProvider: CalendarEventProviding
+    private let permissionController: CalendarPermissionController
     private let settingsStore: SettingsStore
     private let settingsWindowController: SettingsWindowController
     private let labelFormatter = MenuBarLabelFormatter()
@@ -15,11 +16,13 @@ final class MenuBarController: NSObject {
     var onTrayMenuDidClose: (() -> Void)?
 
     init(
-        calendarProvider: CalendarProviding,
+        calendarProvider: CalendarEventProviding,
+        permissionController: CalendarPermissionController,
         settingsStore: SettingsStore,
         settingsWindowController: SettingsWindowController
     ) {
         self.calendarProvider = calendarProvider
+        self.permissionController = permissionController
         self.settingsStore = settingsStore
         self.settingsWindowController = settingsWindowController
         self.statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
@@ -35,7 +38,7 @@ final class MenuBarController: NSObject {
         }
 
         configureStatusItem()
-        updateMenu(accessState: calendarProvider.authorizationState())
+        updateMenu(accessState: permissionController.refreshStatus())
         updateStatusItem()
     }
 
@@ -58,10 +61,10 @@ final class MenuBarController: NSObject {
     }
 
     private func refreshCalendarData() async {
-        let accessState = calendarProvider.authorizationState()
+        let accessState = permissionController.refreshStatus()
         DaylineLog.info("Refresh started with access state: \(String(describing: accessState))")
 
-        guard accessState == .fullAccess else {
+        guard accessState.isSufficientForReadingEvents else {
             events = []
             updateStatusItem()
             updateMenu(accessState: accessState)
@@ -139,18 +142,14 @@ final class MenuBarController: NSObject {
     @objc func requestCalendarAccess() {
         DaylineLog.info("Calendar access requested from menu")
         Task {
-            _ = await calendarProvider.requestFullAccess()
+            _ = await permissionController.requestFullAccess()
             await refreshCalendarData()
         }
     }
 
     @objc func openCalendarPrivacySettings() {
         DaylineLog.info("Opening Calendar privacy settings")
-        guard let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Calendars") else {
-            return
-        }
-
-        NSWorkspace.shared.open(url)
+        permissionController.openPrivacySettings()
     }
 
     @objc func openCalendarApp() {

@@ -21,7 +21,7 @@ final class EventKitCalendarProvider: CalendarProviding {
         case .fullAccess, .authorized:
             return .fullAccess
         case .writeOnly:
-            return .denied
+            return .writeOnly
         @unknown default:
             return .unknown
         }

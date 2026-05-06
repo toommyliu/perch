@@ -92,13 +92,14 @@ struct MenuBuilder {
                 ],
                 footerRows: standardFooterRows
             )
-        case .denied, .restricted, .unknown:
+        case .writeOnly, .denied, .restricted, .unknown:
             return CalendarMenuSnapshot(
                 sections: [
                     CalendarMenuSection(
                         title: "",
                         rows: [
-                            CalendarMenuRow(title: "Calendar access denied", isEnabled: false, color: nil, action: nil),
+                            CalendarMenuRow(title: accessState.statusTitle, isEnabled: false, color: nil, action: nil),
+                            CalendarMenuRow(title: accessState.statusDetail, isEnabled: false, color: nil, action: nil),
                             CalendarMenuRow(title: "Open Calendar Privacy Settings...", isEnabled: true, color: nil, action: .openPrivacySettings)
                         ]
                     )

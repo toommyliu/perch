@@ -5,12 +5,14 @@ final class SettingsWindowController: NSWindowController {
     var onSettingsChanged: (() -> Void)?
 
     private let settingsStore: SettingsStore
+    private let permissionController: CalendarPermissionController
 
-    init(settingsStore: SettingsStore) {
+    init(settingsStore: SettingsStore, permissionController: CalendarPermissionController) {
         self.settingsStore = settingsStore
+        self.permissionController = permissionController
 
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 440, height: 120),
+            contentRect: NSRect(x: 0, y: 0, width: 520, height: 230),
             styleMask: [.titled, .closable],
             backing: .buffered,
             defer: false
@@ -23,7 +25,10 @@ final class SettingsWindowController: NSWindowController {
 
         super.init(window: window)
 
-        let viewModel = SettingsViewModel(settingsStore: settingsStore) { [weak self] in
+        let viewModel = SettingsViewModel(
+            settingsStore: settingsStore,
+            permissionController: permissionController
+        ) { [weak self] in
             self?.onSettingsChanged?()
         }
         window.contentView = NSHostingView(rootView: SettingsView(model: viewModel))
@@ -42,6 +47,8 @@ final class SettingsWindowController: NSWindowController {
         if !window.isVisible {
             window.center()
         }
+
+        permissionController.refreshStatus()
 
         NSApp.activate(ignoringOtherApps: true)
 

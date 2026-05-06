@@ -10,9 +10,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.setActivationPolicy(.accessory)
 
         let settingsStore = SettingsStore()
-        let settingsWindowController = SettingsWindowController(settingsStore: settingsStore)
+        let calendarProvider = EventKitCalendarProvider()
+        let permissionController = CalendarPermissionController(permissionProvider: calendarProvider)
+        let settingsWindowController = SettingsWindowController(
+            settingsStore: settingsStore,
+            permissionController: permissionController
+        )
         let menuBarController = MenuBarController(
-            calendarProvider: EventKitCalendarProvider(),
+            calendarProvider: calendarProvider,
+            permissionController: permissionController,
             settingsStore: settingsStore,
             settingsWindowController: settingsWindowController
         )
