@@ -26,8 +26,8 @@ final class MenuBarController: NSObject {
 
         settingsWindowController.onSettingsChanged = { [weak self] in
             Task { @MainActor in
-                DaylineLog.info("Settings changed; updating status item")
-                self?.updateStatusItem()
+                DaylineLog.info("Settings changed; refreshing calendar data")
+                await self?.refreshCalendarData()
             }
         }
 
@@ -140,9 +140,7 @@ final class MenuBarController: NSObject {
 
     @objc func openSettings() {
         DaylineLog.info("Opening settings window")
-        settingsWindowController.showWindow(nil)
-        settingsWindowController.window?.makeKeyAndOrderFront(nil)
-        NSApp.activate(ignoringOtherApps: true)
+        settingsWindowController.present()
     }
 
     @objc func quit() {

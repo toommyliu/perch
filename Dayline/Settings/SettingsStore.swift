@@ -4,9 +4,11 @@ struct CalendarMenubarSettings: Codable, Equatable {
     var displayMode: MenuBarDisplayMode
     var lookAheadDays: Int
 
+    static let supportedLookAheadDays = [1, 3, 7, 14, 30]
+
     static let defaultValue = CalendarMenubarSettings(
         displayMode: .within6Hours,
-        lookAheadDays: 7
+        lookAheadDays: 3
     )
 }
 
@@ -22,7 +24,7 @@ final class SettingsStore {
         get {
             guard let data = userDefaults.data(forKey: settingsKey),
                   let decoded = try? JSONDecoder().decode(CalendarMenubarSettings.self, from: data),
-                  decoded.lookAheadDays > 0
+                  CalendarMenubarSettings.supportedLookAheadDays.contains(decoded.lookAheadDays)
             else {
                 return .defaultValue
             }
@@ -41,6 +43,16 @@ final class SettingsStore {
     func updateDisplayMode(_ displayMode: MenuBarDisplayMode) {
         var currentSettings = settings
         currentSettings.displayMode = displayMode
+        settings = currentSettings
+    }
+
+    func updateLookAheadDays(_ lookAheadDays: Int) {
+        guard CalendarMenubarSettings.supportedLookAheadDays.contains(lookAheadDays) else {
+            return
+        }
+
+        var currentSettings = settings
+        currentSettings.lookAheadDays = lookAheadDays
         settings = currentSettings
     }
 }

@@ -8,7 +8,7 @@ final class SettingsStoreTests: XCTestCase {
         let store = SettingsStore(userDefaults: defaults)
 
         XCTAssertEqual(store.settings.displayMode, .within6Hours)
-        XCTAssertEqual(store.settings.lookAheadDays, 7)
+        XCTAssertEqual(store.settings.lookAheadDays, 3)
     }
 
     func testPersistedDisplayModeRoundTripsThroughUserDefaults() {
@@ -19,6 +19,25 @@ final class SettingsStoreTests: XCTestCase {
 
         let reloadedStore = SettingsStore(userDefaults: defaults)
         XCTAssertEqual(reloadedStore.settings.displayMode, .always)
+    }
+
+    func testPersistedLookAheadDaysRoundTripsThroughUserDefaults() {
+        let defaults = makeDefaults()
+        let store = SettingsStore(userDefaults: defaults)
+
+        store.updateLookAheadDays(14)
+
+        let reloadedStore = SettingsStore(userDefaults: defaults)
+        XCTAssertEqual(reloadedStore.settings.lookAheadDays, 14)
+    }
+
+    func testUnsupportedLookAheadDaysAreIgnored() {
+        let defaults = makeDefaults()
+        let store = SettingsStore(userDefaults: defaults)
+
+        store.updateLookAheadDays(2)
+
+        XCTAssertEqual(store.settings.lookAheadDays, 3)
     }
 
     func testInvalidStoredValuesFallBackToDefaults() {

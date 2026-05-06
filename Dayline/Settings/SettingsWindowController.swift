@@ -10,7 +10,7 @@ final class SettingsWindowController: NSWindowController {
         self.settingsStore = settingsStore
 
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 380, height: 92),
+            contentRect: NSRect(x: 0, y: 0, width: 440, height: 120),
             styleMask: [.titled, .closable],
             backing: .buffered,
             defer: false
@@ -18,6 +18,8 @@ final class SettingsWindowController: NSWindowController {
         window.title = "Dayline Settings"
         window.center()
         window.isReleasedWhenClosed = false
+        window.collectionBehavior = [.moveToActiveSpace, .fullScreenAuxiliary]
+        window.hidesOnDeactivate = false
 
         super.init(window: window)
 
@@ -25,6 +27,36 @@ final class SettingsWindowController: NSWindowController {
             self?.onSettingsChanged?()
         }
         window.contentView = NSHostingView(rootView: SettingsView(model: viewModel))
+    }
+
+    @MainActor
+    func present() {
+        guard let window else {
+            return
+        }
+
+        if window.isMiniaturized {
+            window.deminiaturize(nil)
+        }
+
+        if !window.isVisible {
+            window.center()
+        }
+
+        NSApp.activate(ignoringOtherApps: true)
+
+        window.level = .floating
+        showWindow(nil)
+        window.orderFrontRegardless()
+        window.makeKeyAndOrderFront(nil)
+
+        // Accessory apps can lose the first ordering race when opened from an NSMenu.
+        DispatchQueue.main.async {
+            NSApp.activate(ignoringOtherApps: true)
+            window.orderFrontRegardless()
+            window.makeKeyAndOrderFront(nil)
+            window.level = .normal
+        }
     }
 
     @available(*, unavailable)

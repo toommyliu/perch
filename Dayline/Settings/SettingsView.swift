@@ -8,12 +8,21 @@ final class SettingsViewModel: ObservableObject {
         }
     }
 
+    @Published var lookAheadDays: Int {
+        didSet {
+            settingsStore.updateLookAheadDays(lookAheadDays)
+            onChange()
+        }
+    }
+
     private let settingsStore: SettingsStore
     private let onChange: () -> Void
 
     init(settingsStore: SettingsStore, onChange: @escaping () -> Void) {
         self.settingsStore = settingsStore
-        self.selectedMode = settingsStore.settings.displayMode
+        let settings = settingsStore.settings
+        self.selectedMode = settings.displayMode
+        self.lookAheadDays = settings.lookAheadDays
         self.onChange = onChange
     }
 }
@@ -23,14 +32,33 @@ struct SettingsView: View {
 
     var body: some View {
         Form {
-            Picker("Show upcoming event in menu bar", selection: $model.selectedMode) {
-                ForEach(MenuBarDisplayMode.allCases, id: \.self) { mode in
-                    Text(mode.displayTitle).tag(mode)
+            Grid(alignment: .leading, horizontalSpacing: 16, verticalSpacing: 14) {
+                GridRow {
+                    Text("Include events")
+                    Picker("Include events", selection: $model.lookAheadDays) {
+                        ForEach(CalendarMenubarSettings.supportedLookAheadDays, id: \.self) { days in
+                            Text("\(days) \(days == 1 ? "day" : "days")").tag(days)
+                        }
+                    }
+                    .labelsHidden()
+                    .pickerStyle(.menu)
+                    .frame(width: 150)
+                }
+
+                GridRow {
+                    Text("Preview upcoming event in menu bar")
+                    Picker("Preview upcoming event in menu bar", selection: $model.selectedMode) {
+                        ForEach(MenuBarDisplayMode.allCases, id: \.self) { mode in
+                            Text(mode.displayTitle).tag(mode)
+                        }
+                    }
+                    .labelsHidden()
+                    .pickerStyle(.menu)
+                    .frame(width: 150)
                 }
             }
-            .pickerStyle(.menu)
         }
         .padding(20)
-        .frame(width: 380)
+        .frame(width: 440)
     }
 }
