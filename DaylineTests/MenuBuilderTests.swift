@@ -74,14 +74,25 @@ final class MenuBuilderTests: XCTestCase {
 
     func testFooterRowsExposeMenuKeyEquivalents() {
         let snapshot = builder.snapshot(accessState: .fullAccess, events: [], now: Date(), calendar: calendar)
+        let visibleFooterRows = snapshot.footerRows.filter { !$0.isHidden }
 
-        XCTAssertEqual(snapshot.footerRows[0].title, "Open Calendar")
-        XCTAssertEqual(snapshot.footerRows[0].keyEquivalent, "1")
-        XCTAssertEqual(snapshot.footerRows[0].keyEquivalentModifierMask, [.command])
+        XCTAssertEqual(visibleFooterRows.map(\.title), ["Open Calendar", "Settings...", "Quit Dayline"])
+        XCTAssertEqual(visibleFooterRows[0].keyEquivalent, "1")
+        XCTAssertEqual(visibleFooterRows[0].keyEquivalentModifierMask, [.command])
 
-        XCTAssertEqual(snapshot.footerRows[1].title, "Settings...")
-        XCTAssertEqual(snapshot.footerRows[1].keyEquivalent, ",")
-        XCTAssertEqual(snapshot.footerRows[1].keyEquivalentModifierMask, [.command])
+        XCTAssertEqual(visibleFooterRows[1].keyEquivalent, ",")
+        XCTAssertEqual(visibleFooterRows[1].keyEquivalentModifierMask, [.command])
+    }
+
+    func testCloseMenuShortcutRowIsHiddenButAllowsKeyEquivalent() {
+        let snapshot = builder.snapshot(accessState: .fullAccess, events: [], now: Date(), calendar: calendar)
+
+        let closeRow = snapshot.footerRows.first { $0.action == .closeMenu }
+        XCTAssertEqual(closeRow?.title, "Close Menu")
+        XCTAssertEqual(closeRow?.keyEquivalent, TrayMenuHotKey.keyEquivalent)
+        XCTAssertEqual(closeRow?.keyEquivalentModifierMask, TrayMenuHotKey.menuModifierFlags)
+        XCTAssertEqual(closeRow?.isHidden, true)
+        XCTAssertEqual(closeRow?.allowsKeyEquivalentWhenHidden, true)
     }
 
     private func event(title: String, start: Date, end: Date) -> CalendarEvent {
@@ -106,5 +117,46 @@ final class MenuBuilderTests: XCTestCase {
         components.hour = hour
         components.minute = minute
         return components.date!
+    }
+}
+
+final class TrayMenuHotKeyTests: XCTestCase {
+    func testControlCommandKMatchesMenuEvent() {
+        XCTAssertTrue(TrayMenuHotKey.matchesMenuEvent(keyEvent(modifierFlags: [.command, .control])))
+    }
+
+    func testCommandKDoesNotMatchMenuEvent() {
+        XCTAssertFalse(TrayMenuHotKey.matchesMenuEvent(keyEvent(modifierFlags: [.command])))
+    }
+
+    func testControlKDoesNotMatchMenuEvent() {
+        XCTAssertFalse(TrayMenuHotKey.matchesMenuEvent(keyEvent(modifierFlags: [.control])))
+    }
+
+    func testControlCommandShiftKDoesNotMatchMenuEvent() {
+        XCTAssertFalse(TrayMenuHotKey.matchesMenuEvent(keyEvent(modifierFlags: [.command, .control, .shift])))
+    }
+
+    func testControlCommandOptionKDoesNotMatchMenuEvent() {
+        XCTAssertFalse(TrayMenuHotKey.matchesMenuEvent(keyEvent(modifierFlags: [.command, .control, .option])))
+    }
+
+    func testControlCommandKWithCapsLockMatchesMenuEvent() {
+        XCTAssertTrue(TrayMenuHotKey.matchesMenuEvent(keyEvent(modifierFlags: [.command, .control, .capsLock])))
+    }
+
+    private func keyEvent(modifierFlags: NSEvent.ModifierFlags) -> NSEvent {
+        NSEvent.keyEvent(
+            with: .keyDown,
+            location: .zero,
+            modifierFlags: modifierFlags,
+            timestamp: 0,
+            windowNumber: 0,
+            context: nil,
+            characters: TrayMenuHotKey.keyEquivalent,
+            charactersIgnoringModifiers: TrayMenuHotKey.keyEquivalent,
+            isARepeat: false,
+            keyCode: UInt16(TrayMenuHotKey.carbonKeyCode)
+        )!
     }
 }

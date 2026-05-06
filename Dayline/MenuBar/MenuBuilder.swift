@@ -6,6 +6,7 @@ enum CalendarMenuAction: Equatable {
     case openPrivacySettings
     case openCalendar
     case openSettings
+    case closeMenu
     case quit
 }
 
@@ -16,6 +17,8 @@ struct CalendarMenuRow: Equatable {
     let action: CalendarMenuAction?
     let keyEquivalent: String
     let keyEquivalentModifierMask: NSEvent.ModifierFlags
+    let isHidden: Bool
+    let allowsKeyEquivalentWhenHidden: Bool
 
     init(
         title: String,
@@ -23,7 +26,9 @@ struct CalendarMenuRow: Equatable {
         color: NSColor?,
         action: CalendarMenuAction?,
         keyEquivalent: String = "",
-        keyEquivalentModifierMask: NSEvent.ModifierFlags = []
+        keyEquivalentModifierMask: NSEvent.ModifierFlags = [],
+        isHidden: Bool = false,
+        allowsKeyEquivalentWhenHidden: Bool = false
     ) {
         self.title = title
         self.isEnabled = isEnabled
@@ -31,6 +36,8 @@ struct CalendarMenuRow: Equatable {
         self.action = action
         self.keyEquivalent = keyEquivalent
         self.keyEquivalentModifierMask = keyEquivalentModifierMask
+        self.isHidden = isHidden
+        self.allowsKeyEquivalentWhenHidden = allowsKeyEquivalentWhenHidden
     }
 
     static func == (lhs: CalendarMenuRow, rhs: CalendarMenuRow) -> Bool {
@@ -50,6 +57,8 @@ struct CalendarMenuRow: Equatable {
             && lhs.action == rhs.action
             && lhs.keyEquivalent == rhs.keyEquivalent
             && lhs.keyEquivalentModifierMask == rhs.keyEquivalentModifierMask
+            && lhs.isHidden == rhs.isHidden
+            && lhs.allowsKeyEquivalentWhenHidden == rhs.allowsKeyEquivalentWhenHidden
     }
 }
 
@@ -143,6 +152,18 @@ struct MenuBuilder {
                 keyEquivalent: ",",
                 keyEquivalentModifierMask: [.command]
             ),
+            // During NSMenu tracking, app-level hotkeys and local monitors are unreliable.
+            // Keep this item hidden, but opt it into hidden key-equivalent matching.
+            CalendarMenuRow(
+                title: "Close Menu",
+                isEnabled: true,
+                color: nil,
+                action: .closeMenu,
+                keyEquivalent: TrayMenuHotKey.keyEquivalent,
+                keyEquivalentModifierMask: TrayMenuHotKey.menuModifierFlags,
+                isHidden: true,
+                allowsKeyEquivalentWhenHidden: true
+            ),
             CalendarMenuRow(title: "Quit Dayline", isEnabled: true, color: nil, action: .quit)
         ]
     }
@@ -210,6 +231,8 @@ struct MenuBuilder {
         item.isEnabled = row.isEnabled
         item.target = target
         item.keyEquivalentModifierMask = row.keyEquivalentModifierMask
+        item.isHidden = row.isHidden
+        item.allowsKeyEquivalentWhenHidden = row.allowsKeyEquivalentWhenHidden
 
         if let color = row.color {
             item.image = MenuIconRenderer.colorBar(color: color, size: NSSize(width: 4, height: 14))
@@ -228,6 +251,8 @@ struct MenuBuilder {
             return #selector(MenuBarController.openCalendarApp)
         case .openSettings:
             return #selector(MenuBarController.openSettings)
+        case .closeMenu:
+            return #selector(MenuBarController.closeTrayMenuFromMenuItem)
         case .quit:
             return #selector(MenuBarController.quit)
         case nil:

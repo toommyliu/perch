@@ -10,6 +10,9 @@ final class MenuBarController: NSObject {
     private let labelFormatter = MenuBarLabelFormatter()
     private let menuBuilder = MenuBuilder()
     private var events: [CalendarEvent] = []
+    private var isTrayMenuOpen = false
+    var onTrayMenuWillOpen: (() -> Void)?
+    var onTrayMenuDidClose: (() -> Void)?
 
     init(
         calendarProvider: CalendarProviding,
@@ -106,8 +109,31 @@ final class MenuBarController: NSObject {
 
     private func updateMenu(accessState: CalendarAccessState) {
         let snapshot = menuBuilder.snapshot(accessState: accessState, events: events)
-        statusItem.menu = menuBuilder.makeMenu(from: snapshot, target: self)
+        let menu = menuBuilder.makeMenu(from: snapshot, target: self)
+        menu.delegate = self
+        statusItem.menu = menu
         DaylineLog.info("Menu updated with \(snapshot.sections.count) sections and access state: \(String(describing: accessState))")
+    }
+
+    func toggleTrayVisibility() {
+        if isTrayMenuOpen {
+            DaylineLog.info("Closing tray menu from global hotkey")
+            statusItem.menu?.cancelTracking()
+            return
+        }
+
+        guard let button = statusItem.button else {
+            DaylineLog.error("Cannot open tray menu because status item has no button")
+            return
+        }
+
+        DaylineLog.info("Opening tray menu from global hotkey")
+        button.performClick(nil)
+    }
+
+    @objc func closeTrayMenuFromMenuItem() {
+        DaylineLog.info("Closing tray menu from menu key equivalent")
+        statusItem.menu?.cancelTracking()
     }
 
     @objc func requestCalendarAccess() {
@@ -146,5 +172,37 @@ final class MenuBarController: NSObject {
     @objc func quit() {
         DaylineLog.info("Quit requested")
         NSApp.terminate(nil)
+    }
+}
+
+extension MenuBarController: NSMenuDelegate {
+    nonisolated func menuWillOpen(_ menu: NSMenu) {
+        updateTrayMenuOpenState(true)
+    }
+
+    nonisolated func menuDidClose(_ menu: NSMenu) {
+        updateTrayMenuOpenState(false)
+    }
+
+    private nonisolated func updateTrayMenuOpenState(_ isOpen: Bool) {
+        if Thread.isMainThread {
+            MainActor.assumeIsolated {
+                isTrayMenuOpen = isOpen
+                if isOpen {
+                    onTrayMenuWillOpen?()
+                } else {
+                    onTrayMenuDidClose?()
+                }
+            }
+        } else {
+            Task { @MainActor in
+                isTrayMenuOpen = isOpen
+                if isOpen {
+                    onTrayMenuWillOpen?()
+                } else {
+                    onTrayMenuDidClose?()
+                }
+            }
+        }
     }
 }
