@@ -11,6 +11,7 @@ final class SettingsStoreTests: XCTestCase {
         XCTAssertEqual(store.settings.lookAheadDays, 3)
         XCTAssertEqual(store.settings.globalShortcut, .defaultValue)
         XCTAssertTrue(store.settings.showEventColors)
+        XCTAssertTrue(store.settings.showAllDayEvents)
     }
 
     func testPersistedDisplayModeRoundTripsThroughUserDefaults() {
@@ -54,6 +55,16 @@ final class SettingsStoreTests: XCTestCase {
         XCTAssertFalse(reloadedStore.settings.showEventColors)
     }
 
+    func testPersistedShowAllDayEventsRoundTripsThroughUserDefaults() {
+        let defaults = makeDefaults()
+        let store = SettingsStore(userDefaults: defaults)
+
+        store.updateShowAllDayEvents(false)
+
+        let reloadedStore = SettingsStore(userDefaults: defaults)
+        XCTAssertFalse(reloadedStore.settings.showAllDayEvents)
+    }
+
     func testUnsupportedLookAheadDaysAreIgnored() {
         let defaults = makeDefaults()
         let store = SettingsStore(userDefaults: defaults)
@@ -83,6 +94,7 @@ final class SettingsStoreTests: XCTestCase {
         XCTAssertEqual(store.settings.lookAheadDays, 14)
         XCTAssertEqual(store.settings.globalShortcut, .defaultValue)
         XCTAssertTrue(store.settings.showEventColors)
+        XCTAssertTrue(store.settings.showAllDayEvents)
     }
 
     func testInvalidStoredGlobalShortcutFallsBackToDefaultShortcut() throws {

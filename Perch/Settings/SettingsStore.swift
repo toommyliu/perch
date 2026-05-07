@@ -5,6 +5,7 @@ struct CalendarMenubarSettings: Codable, Equatable {
     var lookAheadDays: Int
     var globalShortcut: GlobalShortcut
     var showEventColors: Bool
+    var showAllDayEvents: Bool
 
     static let supportedLookAheadDays = [1, 3, 7, 14, 30]
 
@@ -12,19 +13,22 @@ struct CalendarMenubarSettings: Codable, Equatable {
         displayMode: .within6Hours,
         lookAheadDays: 3,
         globalShortcut: .defaultValue,
-        showEventColors: true
+        showEventColors: true,
+        showAllDayEvents: true
     )
 
     init(
         displayMode: MenuBarDisplayMode,
         lookAheadDays: Int,
         globalShortcut: GlobalShortcut = .defaultValue,
-        showEventColors: Bool = true
+        showEventColors: Bool = true,
+        showAllDayEvents: Bool = true
     ) {
         self.displayMode = displayMode
         self.lookAheadDays = lookAheadDays
         self.globalShortcut = globalShortcut.isValid ? globalShortcut : .defaultValue
         self.showEventColors = showEventColors
+        self.showAllDayEvents = showAllDayEvents
     }
 
     init(from decoder: Decoder) throws {
@@ -34,12 +38,14 @@ struct CalendarMenubarSettings: Codable, Equatable {
         let decodedShortcut = try? container.decodeIfPresent(GlobalShortcut.self, forKey: .globalShortcut)
         let globalShortcut = decodedShortcut.flatMap { $0 } ?? .defaultValue
         let showEventColors = try container.decodeIfPresent(Bool.self, forKey: .showEventColors) ?? true
+        let showAllDayEvents = try container.decodeIfPresent(Bool.self, forKey: .showAllDayEvents) ?? true
 
         self.init(
             displayMode: displayMode,
             lookAheadDays: lookAheadDays,
             globalShortcut: globalShortcut,
-            showEventColors: showEventColors
+            showEventColors: showEventColors,
+            showAllDayEvents: showAllDayEvents
         )
     }
 }
@@ -101,6 +107,12 @@ final class SettingsStore {
     func updateShowEventColors(_ showEventColors: Bool) {
         var currentSettings = settings
         currentSettings.showEventColors = showEventColors
+        settings = currentSettings
+    }
+
+    func updateShowAllDayEvents(_ showAllDayEvents: Bool) {
+        var currentSettings = settings
+        currentSettings.showAllDayEvents = showAllDayEvents
         settings = currentSettings
     }
 }

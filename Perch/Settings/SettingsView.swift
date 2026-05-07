@@ -26,6 +26,13 @@ final class SettingsViewModel: ObservableObject {
         }
     }
 
+    @Published var showAllDayEvents: Bool {
+        didSet {
+            settingsStore.updateShowAllDayEvents(showAllDayEvents)
+            onChange()
+        }
+    }
+
     @Published private(set) var accessState: CalendarAccessState
     @Published private(set) var isRequestingAccess = false
     @Published private(set) var globalShortcut: GlobalShortcut
@@ -49,6 +56,7 @@ final class SettingsViewModel: ObservableObject {
         self.selectedMode = settings.displayMode
         self.lookAheadDays = settings.lookAheadDays
         self.showEventColors = settings.showEventColors
+        self.showAllDayEvents = settings.showAllDayEvents
         self.globalShortcut = settings.globalShortcut
         self.accessState = permissionController.accessState
         self.onShortcutChangeRequested = onShortcutChangeRequested
@@ -188,6 +196,12 @@ struct SettingsView: View {
                     .labelsHidden()
                     .pickerStyle(.menu)
                     .frame(width: 150)
+                }
+
+                GridRow {
+                    Text("Show all-day events")
+                    Toggle("Show all-day events", isOn: $model.showAllDayEvents)
+                        .labelsHidden()
                 }
 
                 GridRow {

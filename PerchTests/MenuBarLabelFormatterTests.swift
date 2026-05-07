@@ -129,6 +129,29 @@ final class MenuBarLabelFormatterTests: XCTestCase {
         XCTAssertEqual(content, .event(title: "Conference", relativeText: "today", color: .systemBlue))
     }
 
+    func testAllDayEventIsIgnoredWhenDisabled() {
+        let now = date(hour: 9, minute: 30)
+        let allDayEvent = CalendarEvent(
+            id: "all-day",
+            title: "Conference",
+            startDate: date(hour: 0, minute: 0),
+            endDate: date(day: 7, hour: 0, minute: 0),
+            isAllDay: true,
+            calendarTitle: "School",
+            calendarColor: .systemBlue
+        )
+        let timedEvent = makeEvent(start: date(hour: 10, minute: 0), end: date(hour: 11, minute: 0))
+
+        let content = formatter.labelContent(
+            events: [allDayEvent, timedEvent],
+            settings: CalendarMenubarSettings(displayMode: .within6Hours, lookAheadDays: 7, showAllDayEvents: false),
+            now: now,
+            calendar: calendar
+        )
+
+        XCTAssertEqual(content, .event(title: "CMPE172", relativeText: "in 30m", color: .systemBlue))
+    }
+
     func testLongTitleTruncatesWhilePreservingRelativeTime() {
         let now = date(hour: 9, minute: 0)
         let event = makeEvent(

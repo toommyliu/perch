@@ -41,7 +41,11 @@ struct MenuBarLabelFormatter {
         let day = calendar.component(.day, from: now)
 
         guard settings.displayMode != .never,
-              let nextEvent = nextVisibleEvent(from: events, now: now)
+              let nextEvent = CalendarEventVisibility.upcomingEvents(
+                from: events,
+                includeAllDayEvents: settings.showAllDayEvents,
+                now: now
+              ).first
         else {
             return .dateIcon(day: day)
         }
@@ -55,23 +59,6 @@ struct MenuBarLabelFormatter {
             relativeText: relativeText(for: nextEvent, mode: settings.displayMode, now: now, calendar: calendar),
             color: settings.showEventColors ? nextEvent.calendarColor : .white
         )
-    }
-
-    private func nextVisibleEvent(from events: [CalendarEvent], now: Date) -> CalendarEvent? {
-        events
-            .filter { $0.endDate >= now }
-            .sorted {
-                if $0.startDate != $1.startDate {
-                    return $0.startDate < $1.startDate
-                }
-
-                if $0.endDate != $1.endDate {
-                    return $0.endDate < $1.endDate
-                }
-
-                return $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending
-            }
-            .first
     }
 
     private func shouldShow(_ event: CalendarEvent, mode: MenuBarDisplayMode, now: Date) -> Bool {

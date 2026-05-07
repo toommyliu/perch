@@ -27,6 +27,7 @@
 		100000000000000000000014 /* GlobalHotKeyController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000114 /* GlobalHotKeyController.swift */; };
 		100000000000000000000016 /* CalendarPermissionController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000115 /* CalendarPermissionController.swift */; };
 		100000000000000000000017 /* GlobalShortcut.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000116 /* GlobalShortcut.swift */; };
+		100000000000000000000018 /* CalendarEventVisibility.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000117 /* CalendarEventVisibility.swift */; };
 		100000000000000000000011 /* EventKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 100000000000000000000201 /* EventKit.framework */; };
 		100000000000000000000012 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 100000000000000000000202 /* SwiftUI.framework */; };
 		100000000000000000000015 /* Carbon.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 100000000000000000000203 /* Carbon.framework */; };
@@ -73,6 +74,7 @@
 		100000000000000000000114 /* GlobalHotKeyController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlobalHotKeyController.swift; sourceTree = "<group>"; };
 		100000000000000000000115 /* CalendarPermissionController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarPermissionController.swift; sourceTree = "<group>"; };
 		100000000000000000000116 /* GlobalShortcut.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlobalShortcut.swift; sourceTree = "<group>"; };
+		100000000000000000000117 /* CalendarEventVisibility.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarEventVisibility.swift; sourceTree = "<group>"; };
 		100000000000000000000121 /* MenuBarLabelFormatterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarLabelFormatterTests.swift; sourceTree = "<group>"; };
 		100000000000000000000122 /* MenuBuilderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBuilderTests.swift; sourceTree = "<group>"; };
 		100000000000000000000123 /* SettingsStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsStoreTests.swift; sourceTree = "<group>"; };
@@ -175,6 +177,7 @@
 				100000000000000000000102 /* CalendarAccessState.swift */,
 				100000000000000000000103 /* MenuBarDisplayMode.swift */,
 				100000000000000000000104 /* CalendarEvent.swift */,
+				100000000000000000000117 /* CalendarEventVisibility.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -338,6 +341,7 @@
 				10000000000000000000000F /* DateFormatting.swift in Sources */,
 				100000000000000000000010 /* PerchLog.swift in Sources */,
 				100000000000000000000017 /* GlobalShortcut.swift in Sources */,
+				100000000000000000000018 /* CalendarEventVisibility.swift in Sources */,
 				100000000000000000000014 /* GlobalHotKeyController.swift in Sources */,
 				100000000000000000000016 /* CalendarPermissionController.swift in Sources */,
 			);

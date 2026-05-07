@@ -126,6 +126,7 @@ struct MenuBuilder {
         events: [CalendarEvent],
         globalShortcut: GlobalShortcut = .defaultValue,
         showEventColors: Bool = true,
+        showAllDayEvents: Bool = true,
         now: Date = Date(),
         calendar: Calendar = .current
     ) -> CalendarMenuSnapshot {
@@ -161,6 +162,7 @@ struct MenuBuilder {
                 events: events,
                 globalShortcut: globalShortcut,
                 showEventColors: showEventColors,
+                showAllDayEvents: showAllDayEvents,
                 now: now,
                 calendar: calendar
             )
@@ -229,22 +231,15 @@ struct MenuBuilder {
         events: [CalendarEvent],
         globalShortcut: GlobalShortcut,
         showEventColors: Bool,
+        showAllDayEvents: Bool,
         now: Date,
         calendar: Calendar
     ) -> CalendarMenuSnapshot {
-        let visibleEvents = events
-            .filter { $0.endDate >= now }
-            .sorted {
-                if $0.startDate != $1.startDate {
-                    return $0.startDate < $1.startDate
-                }
-
-                if $0.endDate != $1.endDate {
-                    return $0.endDate < $1.endDate
-                }
-
-                return $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending
-            }
+        let visibleEvents = CalendarEventVisibility.upcomingEvents(
+            from: events,
+            includeAllDayEvents: showAllDayEvents,
+            now: now
+        )
 
         guard !visibleEvents.isEmpty else {
             return CalendarMenuSnapshot(

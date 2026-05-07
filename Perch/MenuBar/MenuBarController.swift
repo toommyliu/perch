@@ -116,7 +116,8 @@ final class MenuBarController: NSObject {
             accessState: accessState,
             events: events,
             globalShortcut: settings.globalShortcut,
-            showEventColors: settings.showEventColors
+            showEventColors: settings.showEventColors,
+            showAllDayEvents: settings.showAllDayEvents
         )
         let menu = menuBuilder.makeMenu(from: snapshot, target: self)
         menu.delegate = self

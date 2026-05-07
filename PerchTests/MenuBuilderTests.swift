@@ -55,6 +55,32 @@ final class MenuBuilderTests: XCTestCase {
         XCTAssertEqual(snapshot.sections[0].rows[0].title, "All day · Conference")
     }
 
+    func testAllDayRowsAreExcludedWhenDisabled() {
+        let now = date(day: 6, hour: 9, minute: 0)
+        let events = [
+            CalendarEvent(
+                id: "all-day",
+                title: "Conference",
+                startDate: date(day: 6, hour: 0, minute: 0),
+                endDate: date(day: 7, hour: 0, minute: 0),
+                isAllDay: true,
+                calendarTitle: "School",
+                calendarColor: .systemRed
+            ),
+            event(title: "Timed", start: date(day: 6, hour: 10, minute: 0), end: date(day: 6, hour: 11, minute: 0))
+        ]
+
+        let snapshot = builder.snapshot(
+            accessState: .fullAccess,
+            events: events,
+            showAllDayEvents: false,
+            now: now,
+            calendar: calendar
+        )
+
+        XCTAssertEqual(snapshot.sections[0].rows.map(\.title), ["10:00 AM · Timed"])
+    }
+
     func testEventRowsUseWhiteColorWhenCalendarColorsAreDisabled() {
         let now = date(day: 6, hour: 9, minute: 0)
         let events = [
