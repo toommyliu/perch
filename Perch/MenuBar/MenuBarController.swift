@@ -10,6 +10,7 @@ final class MenuBarController: NSObject {
     private let settingsWindowController: SettingsWindowController
     private let labelFormatter = MenuBarLabelFormatter()
     private let menuBuilder = MenuBuilder()
+    private let eventOpenURLBuilder = CalendarEventOpenURLBuilder()
     private var events: [CalendarEvent] = []
     private var isTrayMenuOpen = false
     var onTrayMenuWillOpen: (() -> Void)?
@@ -161,6 +162,42 @@ final class MenuBarController: NSObject {
 
     @objc func openCalendarApp() {
         PerchLog.info("Opening Apple Calendar")
+        openCalendarAppFallback()
+    }
+
+    @objc func openCalendarEvent(_ sender: NSMenuItem) {
+        guard case let .openEvent(eventIdentifier, startDate)? = sender.representedObject as? CalendarMenuAction else {
+            PerchLog.error("Open event menu item missing event action")
+            openCalendarAppFallback()
+            return
+        }
+
+        guard let url = eventOpenURLBuilder.url(eventIdentifier: eventIdentifier, startDate: startDate) else {
+            PerchLog.error("Could not build Calendar event URL")
+            openCalendarAppFallback()
+            return
+        }
+
+        PerchLog.info("Opening Apple Calendar event")
+        if !NSWorkspace.shared.open(url) {
+            PerchLog.error("Could not open Calendar event URL")
+            openCalendarAppFallback()
+        }
+    }
+
+    @objc func joinZoomMeeting(_ sender: NSMenuItem) {
+        guard case let .joinZoomMeeting(url)? = sender.representedObject as? CalendarMenuAction else {
+            PerchLog.error("Join Zoom menu item missing Zoom action")
+            return
+        }
+
+        PerchLog.info("Opening Zoom meeting")
+        if !NSWorkspace.shared.open(url) {
+            PerchLog.error("Could not open Zoom meeting URL")
+        }
+    }
+
+    private func openCalendarAppFallback() {
         guard let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: "com.apple.iCal") else {
             PerchLog.error("Could not resolve Apple Calendar bundle id")
             return

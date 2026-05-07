@@ -93,26 +93,37 @@ struct MenuBarLabelFormatter {
         }
 
         if event.startDate <= now && event.endDate >= now {
-            return "now"
-        }
-
-        if mode == .always && !calendar.isDate(event.startDate, inSameDayAs: now) {
-            return DateFormatting.weekday(event.startDate)
+            return remainingRelativeText(from: now, to: event.endDate)
         }
 
         return futureRelativeText(from: now, to: event.startDate)
     }
 
     private func futureRelativeText(from now: Date, to startDate: Date) -> String {
-        let totalMinutes = max(0, Int(startDate.timeIntervalSince(now) / 60))
+        "in \(compactDuration(startDate.timeIntervalSince(now)))"
+    }
+
+    private func remainingRelativeText(from now: Date, to endDate: Date) -> String {
+        "\(compactDuration(endDate.timeIntervalSince(now))) left"
+    }
+
+    private func compactDuration(_ timeInterval: TimeInterval) -> String {
+        let totalMinutes = max(0, Int(timeInterval / 60))
+        let days = totalMinutes / (24 * 60)
+
+        if days > 0 {
+            let hours = (totalMinutes % (24 * 60)) / 60
+            return "\(days)d \(hours)h"
+        }
+
         let hours = totalMinutes / 60
         let minutes = totalMinutes % 60
 
         if hours == 0 {
-            return "in \(minutes)m"
+            return "\(minutes)m"
         }
 
-        return "in \(hours)h \(minutes)m"
+        return "\(hours)h \(minutes)m"
     }
 
     private func truncatedTitle(_ title: String) -> String {

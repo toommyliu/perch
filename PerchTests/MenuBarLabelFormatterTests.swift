@@ -62,7 +62,21 @@ final class MenuBarLabelFormatterTests: XCTestCase {
             calendar: calendar
         )
 
-        XCTAssertEqual(content, .event(title: "CMPE172", relativeText: "Thu", color: .systemBlue))
+        XCTAssertEqual(content, .event(title: "CMPE172", relativeText: "in 1d 2h", color: .systemBlue))
+    }
+
+    func testFutureTimedEventTomorrowInAlwaysModeShowsCountdown() {
+        let now = date(hour: 9, minute: 0)
+        let event = makeEvent(start: date(day: 7, hour: 8, minute: 12), end: date(day: 7, hour: 9, minute: 0))
+
+        let content = formatter.labelContent(
+            events: [event],
+            settings: CalendarMenubarSettings(displayMode: .always, lookAheadDays: 7),
+            now: now,
+            calendar: calendar
+        )
+
+        XCTAssertEqual(content, .event(title: "CMPE172", relativeText: "in 23h 12m", color: .systemBlue))
     }
 
     func testNeverDoesNotShowEventText() {
@@ -93,7 +107,7 @@ final class MenuBarLabelFormatterTests: XCTestCase {
         XCTAssertEqual(content, .event(title: "CMPE172", relativeText: "in 1h 0m", color: .perchMutedWhite))
     }
 
-    func testOngoingTimedEventFormatsAsNow() {
+    func testOngoingTimedEventShowsTimeRemaining() {
         let now = date(hour: 9, minute: 30)
         let event = makeEvent(start: date(hour: 9, minute: 0), end: date(hour: 10, minute: 0))
 
@@ -104,7 +118,49 @@ final class MenuBarLabelFormatterTests: XCTestCase {
             calendar: calendar
         )
 
-        XCTAssertEqual(content, .event(title: "CMPE172", relativeText: "now", color: .systemBlue))
+        XCTAssertEqual(content, .event(title: "CMPE172", relativeText: "30m left", color: .systemBlue))
+    }
+
+    func testOngoingTimedEventShowsHoursAndMinutesRemaining() {
+        let now = date(hour: 9, minute: 30)
+        let event = makeEvent(start: date(hour: 9, minute: 0), end: date(hour: 10, minute: 45))
+
+        let content = formatter.labelContent(
+            events: [event],
+            settings: .defaultValue,
+            now: now,
+            calendar: calendar
+        )
+
+        XCTAssertEqual(content, .event(title: "CMPE172", relativeText: "1h 15m left", color: .systemBlue))
+    }
+
+    func testEventStartingInLessThanOneMinuteShowsZeroMinuteCountdown() {
+        let now = date(hour: 9, minute: 0, second: 30)
+        let event = makeEvent(start: date(hour: 9, minute: 0, second: 59), end: date(hour: 10, minute: 0))
+
+        let content = formatter.labelContent(
+            events: [event],
+            settings: .defaultValue,
+            now: now,
+            calendar: calendar
+        )
+
+        XCTAssertEqual(content, .event(title: "CMPE172", relativeText: "in 0m", color: .systemBlue))
+    }
+
+    func testEventEndingInLessThanOneMinuteShowsZeroMinutesLeft() {
+        let now = date(hour: 9, minute: 59, second: 30)
+        let event = makeEvent(start: date(hour: 9, minute: 0), end: date(hour: 9, minute: 59, second: 59))
+
+        let content = formatter.labelContent(
+            events: [event],
+            settings: .defaultValue,
+            now: now,
+            calendar: calendar
+        )
+
+        XCTAssertEqual(content, .event(title: "CMPE172", relativeText: "0m left", color: .systemBlue))
     }
 
     func testAllDayEventFormatsAsToday() {
@@ -189,7 +245,7 @@ final class MenuBarLabelFormatterTests: XCTestCase {
         )
     }
 
-    private func date(day: Int = 6, hour: Int, minute: Int) -> Date {
+    private func date(day: Int = 6, hour: Int, minute: Int, second: Int = 0) -> Date {
         var components = DateComponents()
         components.calendar = calendar
         components.timeZone = calendar.timeZone
@@ -198,6 +254,7 @@ final class MenuBarLabelFormatterTests: XCTestCase {
         components.day = day
         components.hour = hour
         components.minute = minute
+        components.second = second
         return components.date!
     }
 }

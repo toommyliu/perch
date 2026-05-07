@@ -4,6 +4,7 @@ import Foundation
 
 final class EventKitCalendarProvider: CalendarProviding {
     private let eventStore: EKEventStore
+    private let zoomMeetingLinkExtractor = ZoomMeetingLinkExtractor()
 
     init(eventStore: EKEventStore = EKEventStore()) {
         self.eventStore = eventStore
@@ -49,13 +50,19 @@ final class EventKitCalendarProvider: CalendarProviding {
             .filter { $0.status != .canceled }
             .map { event in
                 CalendarEvent(
-                    id: event.eventIdentifier ?? "\(event.title ?? "")-\(event.startDate.timeIntervalSince1970)",
+                    id: event.calendarItemIdentifier,
                     title: event.title?.isEmpty == false ? event.title : "Untitled",
                     startDate: event.startDate,
                     endDate: event.endDate,
                     isAllDay: event.isAllDay,
                     calendarTitle: event.calendar.title,
-                    calendarColor: NSColor(cgColor: event.calendar.cgColor) ?? .controlAccentColor
+                    calendarColor: NSColor(cgColor: event.calendar.cgColor) ?? .controlAccentColor,
+                    zoomMeetingURL: zoomMeetingLinkExtractor.meetingURL(from: [
+                        event.url?.absoluteString,
+                        event.location,
+                        event.notes
+                    ]),
+                    responseStatus: Self.responseStatus(for: event)
                 )
             }
             .sorted {
@@ -69,5 +76,24 @@ final class EventKitCalendarProvider: CalendarProviding {
 
                 return $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending
             }
+    }
+
+    private static func responseStatus(for event: EKEvent) -> CalendarEventResponseStatus? {
+        guard let currentUser = event.attendees?.first(where: { $0.isCurrentUser }) else {
+            return nil
+        }
+
+        switch currentUser.participantStatus {
+        case .accepted:
+            return .yes
+        case .declined:
+            return .no
+        case .tentative:
+            return .maybe
+        case .unknown, .pending, .delegated, .completed, .inProcess:
+            return nil
+        @unknown default:
+            return nil
+        }
     }
 }

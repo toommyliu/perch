@@ -5,39 +5,61 @@ enum CalendarMenuAction: Equatable {
     case requestAccess
     case openPrivacySettings
     case openCalendar
+    case openEvent(eventIdentifier: String, startDate: Date)
+    case joinZoomMeeting(URL)
     case openSettings
     case closeMenu
     case quit
+}
+
+enum CalendarMenuIcon: Equatable {
+    case zoom
 }
 
 struct CalendarMenuRow: Equatable {
     let title: String
     let isEnabled: Bool
     let color: NSColor?
+    let icon: CalendarMenuIcon?
     let action: CalendarMenuAction?
     let keyEquivalent: String
     let keyEquivalentModifierMask: NSEvent.ModifierFlags
     let isHidden: Bool
     let allowsKeyEquivalentWhenHidden: Bool
+    let isSeparator: Bool
+    let isSelected: Bool
+    let submenuRows: [CalendarMenuRow]
 
     init(
         title: String,
         isEnabled: Bool,
         color: NSColor?,
+        icon: CalendarMenuIcon? = nil,
         action: CalendarMenuAction?,
         keyEquivalent: String = "",
         keyEquivalentModifierMask: NSEvent.ModifierFlags = [],
         isHidden: Bool = false,
-        allowsKeyEquivalentWhenHidden: Bool = false
+        allowsKeyEquivalentWhenHidden: Bool = false,
+        isSeparator: Bool = false,
+        isSelected: Bool = false,
+        submenuRows: [CalendarMenuRow] = []
     ) {
         self.title = title
         self.isEnabled = isEnabled
         self.color = color
+        self.icon = icon
         self.action = action
         self.keyEquivalent = keyEquivalent
         self.keyEquivalentModifierMask = keyEquivalentModifierMask
         self.isHidden = isHidden
         self.allowsKeyEquivalentWhenHidden = allowsKeyEquivalentWhenHidden
+        self.isSeparator = isSeparator
+        self.isSelected = isSelected
+        self.submenuRows = submenuRows
+    }
+
+    static var separator: CalendarMenuRow {
+        CalendarMenuRow(title: "", isEnabled: false, color: nil, action: nil, isSeparator: true)
     }
 
     static func == (lhs: CalendarMenuRow, rhs: CalendarMenuRow) -> Bool {
@@ -54,11 +76,15 @@ struct CalendarMenuRow: Equatable {
         return lhs.title == rhs.title
             && lhs.isEnabled == rhs.isEnabled
             && colorsMatch
+            && lhs.icon == rhs.icon
             && lhs.action == rhs.action
             && lhs.keyEquivalent == rhs.keyEquivalent
             && lhs.keyEquivalentModifierMask == rhs.keyEquivalentModifierMask
             && lhs.isHidden == rhs.isHidden
             && lhs.allowsKeyEquivalentWhenHidden == rhs.allowsKeyEquivalentWhenHidden
+            && lhs.isSeparator == rhs.isSeparator
+            && lhs.isSelected == rhs.isSelected
+            && lhs.submenuRows == rhs.submenuRows
     }
 }
 
@@ -262,18 +288,82 @@ struct MenuBuilder {
         let sections = grouped.keys.sorted().map { day in
             CalendarMenuSection(
                 title: DateFormatting.menuSectionTitle(for: day, now: now, calendar: calendar),
-                rows: grouped[day, default: []].map { event in
-                    CalendarMenuRow(
-                        title: rowTitle(for: event),
-                        isEnabled: false,
-                        color: showEventColors ? event.calendarColor : .perchMutedWhite,
-                        action: nil
-                    )
+                rows: grouped[day, default: []].flatMap { event in
+                    rows(for: event, showEventColors: showEventColors)
                 }
             )
         }
 
         return CalendarMenuSnapshot(sections: sections, footerRows: standardFooterRows(globalShortcut: globalShortcut))
+    }
+
+    private func rows(for event: CalendarEvent, showEventColors: Bool) -> [CalendarMenuRow] {
+        let openEventAction = CalendarMenuAction.openEvent(eventIdentifier: event.id, startDate: event.startDate)
+        let eventRow = CalendarMenuRow(
+            title: rowTitle(for: event),
+            isEnabled: true,
+            color: showEventColors ? event.calendarColor : .perchMutedWhite,
+            action: openEventAction
+        )
+
+        guard let zoomMeetingURL = event.zoomMeetingURL else {
+            return [eventRow]
+        }
+
+        let zoomEventRow = CalendarMenuRow(
+            title: rowTitle(for: event),
+            isEnabled: true,
+            color: showEventColors ? event.calendarColor : .perchMutedWhite,
+            action: nil,
+            submenuRows: [
+                CalendarMenuRow(
+                    title: "Join Zoom Meeting",
+                    isEnabled: true,
+                    color: nil,
+                    action: .joinZoomMeeting(zoomMeetingURL),
+                    keyEquivalent: "j"
+                ),
+                .separator,
+                CalendarMenuRow(title: "Update response", isEnabled: false, color: nil, action: nil),
+                CalendarMenuRow(
+                    title: "Yes",
+                    isEnabled: false,
+                    color: nil,
+                    action: nil,
+                    keyEquivalent: "y",
+                    isSelected: event.responseStatus == .yes
+                ),
+                CalendarMenuRow(
+                    title: "No",
+                    isEnabled: false,
+                    color: nil,
+                    action: nil,
+                    keyEquivalent: "n",
+                    isSelected: event.responseStatus == .no
+                ),
+                CalendarMenuRow(
+                    title: "Maybe",
+                    isEnabled: false,
+                    color: nil,
+                    action: nil,
+                    keyEquivalent: "m",
+                    isSelected: event.responseStatus == .maybe
+                ),
+                .separator,
+                CalendarMenuRow(title: "Show in Calendar", isEnabled: true, color: nil, action: openEventAction)
+            ]
+        )
+
+        return [
+            zoomEventRow,
+            CalendarMenuRow(
+                title: "Join Zoom Meeting",
+                isEnabled: true,
+                color: nil,
+                icon: .zoom,
+                action: .joinZoomMeeting(zoomMeetingURL)
+            )
+        ]
     }
 
     private func rowTitle(for event: CalendarEvent) -> String {
@@ -285,18 +375,41 @@ struct MenuBuilder {
     }
 
     private func menuItem(for row: CalendarMenuRow, target: AnyObject) -> NSMenuItem {
+        if row.isSeparator {
+            return .separator()
+        }
+
         let item = NSMenuItem(title: row.title, action: selector(for: row.action), keyEquivalent: row.keyEquivalent)
         item.isEnabled = row.isEnabled
         item.target = target
         item.keyEquivalentModifierMask = row.keyEquivalentModifierMask
         item.isHidden = row.isHidden
         item.allowsKeyEquivalentWhenHidden = row.allowsKeyEquivalentWhenHidden
+        item.state = row.isSelected ? .on : .off
+        item.representedObject = row.action
 
-        if let color = row.color {
+        if let icon = row.icon {
+            item.image = image(for: icon)
+        } else if let color = row.color {
             item.image = MenuIconRenderer.colorBar(color: color, size: NSSize(width: 4, height: 14))
         }
 
+        if !row.submenuRows.isEmpty {
+            let submenu = NSMenu()
+            for submenuRow in row.submenuRows {
+                submenu.addItem(menuItem(for: submenuRow, target: target))
+            }
+            item.submenu = submenu
+        }
+
         return item
+    }
+
+    private func image(for icon: CalendarMenuIcon) -> NSImage {
+        switch icon {
+        case .zoom:
+            return MenuIconRenderer.zoomIcon()
+        }
     }
 
     private func selector(for action: CalendarMenuAction?) -> Selector? {
@@ -307,6 +420,10 @@ struct MenuBuilder {
             return #selector(MenuBarController.openCalendarPrivacySettings)
         case .openCalendar:
             return #selector(MenuBarController.openCalendarApp)
+        case .openEvent:
+            return #selector(MenuBarController.openCalendarEvent(_:))
+        case .joinZoomMeeting:
+            return #selector(MenuBarController.joinZoomMeeting(_:))
         case .openSettings:
             return #selector(MenuBarController.openSettings)
         case .closeMenu:

@@ -28,6 +28,8 @@
 		100000000000000000000016 /* CalendarPermissionController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000115 /* CalendarPermissionController.swift */; };
 		100000000000000000000017 /* GlobalShortcut.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000116 /* GlobalShortcut.swift */; };
 		100000000000000000000018 /* CalendarEventVisibility.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000117 /* CalendarEventVisibility.swift */; };
+		100000000000000000000019 /* CalendarEventOpenURLBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000118 /* CalendarEventOpenURLBuilder.swift */; };
+		10000000000000000000001A /* ZoomMeetingLinkExtractor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000119 /* ZoomMeetingLinkExtractor.swift */; };
 		100000000000000000000011 /* EventKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 100000000000000000000201 /* EventKit.framework */; };
 		100000000000000000000012 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 100000000000000000000202 /* SwiftUI.framework */; };
 		100000000000000000000015 /* Carbon.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 100000000000000000000203 /* Carbon.framework */; };
@@ -39,6 +41,8 @@
 		100000000000000000000026 /* SettingsViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000126 /* SettingsViewModelTests.swift */; };
 		100000000000000000000027 /* GlobalShortcutTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000127 /* GlobalShortcutTests.swift */; };
 		100000000000000000000028 /* GlobalHotKeyControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000128 /* GlobalHotKeyControllerTests.swift */; };
+		100000000000000000000029 /* CalendarEventOpenURLBuilderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000129 /* CalendarEventOpenURLBuilderTests.swift */; };
+		10000000000000000000002A /* ZoomMeetingLinkExtractorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10000000000000000000012A /* ZoomMeetingLinkExtractorTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -75,6 +79,8 @@
 		100000000000000000000115 /* CalendarPermissionController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarPermissionController.swift; sourceTree = "<group>"; };
 		100000000000000000000116 /* GlobalShortcut.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlobalShortcut.swift; sourceTree = "<group>"; };
 		100000000000000000000117 /* CalendarEventVisibility.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarEventVisibility.swift; sourceTree = "<group>"; };
+		100000000000000000000118 /* CalendarEventOpenURLBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarEventOpenURLBuilder.swift; sourceTree = "<group>"; };
+		100000000000000000000119 /* ZoomMeetingLinkExtractor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZoomMeetingLinkExtractor.swift; sourceTree = "<group>"; };
 		100000000000000000000121 /* MenuBarLabelFormatterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarLabelFormatterTests.swift; sourceTree = "<group>"; };
 		100000000000000000000122 /* MenuBuilderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBuilderTests.swift; sourceTree = "<group>"; };
 		100000000000000000000123 /* SettingsStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsStoreTests.swift; sourceTree = "<group>"; };
@@ -83,6 +89,8 @@
 		100000000000000000000126 /* SettingsViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsViewModelTests.swift; sourceTree = "<group>"; };
 		100000000000000000000127 /* GlobalShortcutTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlobalShortcutTests.swift; sourceTree = "<group>"; };
 		100000000000000000000128 /* GlobalHotKeyControllerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlobalHotKeyControllerTests.swift; sourceTree = "<group>"; };
+		100000000000000000000129 /* CalendarEventOpenURLBuilderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarEventOpenURLBuilderTests.swift; sourceTree = "<group>"; };
+		10000000000000000000012A /* ZoomMeetingLinkExtractorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZoomMeetingLinkExtractorTests.swift; sourceTree = "<group>"; };
 		100000000000000000000201 /* EventKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = EventKit.framework; path = System/Library/Frameworks/EventKit.framework; sourceTree = SDKROOT; };
 		100000000000000000000202 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		100000000000000000000203 /* Carbon.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Carbon.framework; path = System/Library/Frameworks/Carbon.framework; sourceTree = SDKROOT; };
@@ -148,6 +156,8 @@
 				100000000000000000000126 /* SettingsViewModelTests.swift */,
 				100000000000000000000127 /* GlobalShortcutTests.swift */,
 				100000000000000000000128 /* GlobalHotKeyControllerTests.swift */,
+				100000000000000000000129 /* CalendarEventOpenURLBuilderTests.swift */,
+				10000000000000000000012A /* ZoomMeetingLinkExtractorTests.swift */,
 			);
 			path = PerchTests;
 			sourceTree = "<group>";
@@ -187,6 +197,8 @@
 			children = (
 				100000000000000000000105 /* CalendarProviding.swift */,
 				100000000000000000000106 /* EventKitCalendarProvider.swift */,
+				100000000000000000000118 /* CalendarEventOpenURLBuilder.swift */,
+				100000000000000000000119 /* ZoomMeetingLinkExtractor.swift */,
 				100000000000000000000107 /* CalendarRefreshCoordinator.swift */,
 				100000000000000000000115 /* CalendarPermissionController.swift */,
 			);
@@ -342,6 +354,8 @@
 				100000000000000000000010 /* PerchLog.swift in Sources */,
 				100000000000000000000017 /* GlobalShortcut.swift in Sources */,
 				100000000000000000000018 /* CalendarEventVisibility.swift in Sources */,
+				100000000000000000000019 /* CalendarEventOpenURLBuilder.swift in Sources */,
+				10000000000000000000001A /* ZoomMeetingLinkExtractor.swift in Sources */,
 				100000000000000000000014 /* GlobalHotKeyController.swift in Sources */,
 				100000000000000000000016 /* CalendarPermissionController.swift in Sources */,
 			);
@@ -359,6 +373,8 @@
 				100000000000000000000026 /* SettingsViewModelTests.swift in Sources */,
 				100000000000000000000027 /* GlobalShortcutTests.swift in Sources */,
 				100000000000000000000028 /* GlobalHotKeyControllerTests.swift in Sources */,
+				100000000000000000000029 /* CalendarEventOpenURLBuilderTests.swift in Sources */,
+				10000000000000000000002A /* ZoomMeetingLinkExtractorTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
