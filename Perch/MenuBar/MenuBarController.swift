@@ -99,7 +99,7 @@ final class MenuBarController: NSObject {
 
         switch content {
         case let .dateIcon(day):
-            statusItem.length = 30
+            statusItem.length = 32
             button.title = ""
             button.image = MenuIconRenderer.dateIcon(day: day)
             PerchLog.info("Status item set to date icon for day \(day)")
