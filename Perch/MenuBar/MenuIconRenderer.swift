@@ -7,31 +7,46 @@ extension NSColor {
 
 enum MenuIconRenderer {
     static func dateIcon(day: Int) -> NSImage {
-        let size = NSSize(width: 26, height: 22)
+        let size = NSSize(width: 22, height: 18)
         let image = NSImage(size: size)
 
         image.lockFocus()
 
-        let rect = NSRect(origin: .zero, size: size)
-        NSColor(calibratedRed: 0.27, green: 0.49, blue: 0.68, alpha: 1).setFill()
-        NSBezierPath(roundedRect: rect.insetBy(dx: 2, dy: 2), xRadius: 4, yRadius: 4).fill()
+        let primaryColor = NSColor.black
+        primaryColor.setStroke()
+        primaryColor.setFill()
+
+        let calendarRect = NSRect(x: 3.5, y: 2.5, width: 15.0, height: 13.0)
+        let calendarPath = NSBezierPath(roundedRect: calendarRect, xRadius: 2.5, yRadius: 2.5)
+        calendarPath.lineWidth = 1.2
+        calendarPath.stroke()
+
+        let headerPath = NSBezierPath()
+        headerPath.lineWidth = 1.1
+        headerPath.lineCapStyle = .round
+        headerPath.move(to: NSPoint(x: 5.5, y: 12.5))
+        headerPath.line(to: NSPoint(x: 16.5, y: 12.5))
+        headerPath.stroke()
+
+        NSBezierPath(ovalIn: NSRect(x: 7.0, y: 14.5, width: 1.5, height: 1.5)).fill()
+        NSBezierPath(ovalIn: NSRect(x: 13.5, y: 14.5, width: 1.5, height: 1.5)).fill()
 
         let paragraphStyle = NSMutableParagraphStyle()
         paragraphStyle.alignment = .center
 
         let attributes: [NSAttributedString.Key: Any] = [
-            .font: NSFont.monospacedDigitSystemFont(ofSize: 13, weight: .semibold),
-            .foregroundColor: NSColor.perchMutedWhite,
+            .font: NSFont.monospacedDigitSystemFont(ofSize: day < 10 ? 9.8 : 9.0, weight: .semibold),
+            .foregroundColor: primaryColor,
             .paragraphStyle: paragraphStyle
         ]
 
         String(day).draw(
-            in: NSRect(x: 0, y: 3, width: size.width, height: 16),
+            in: NSRect(x: 3.5, y: 3.5, width: 15.0, height: 9.5),
             withAttributes: attributes
         )
 
         image.unlockFocus()
-        image.isTemplate = false
+        image.isTemplate = true
         return image
     }
 

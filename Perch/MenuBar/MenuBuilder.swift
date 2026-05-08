@@ -294,7 +294,10 @@ struct MenuBuilder {
             )
         }
 
-        return CalendarMenuSnapshot(sections: sections, footerRows: standardFooterRows(globalShortcut: globalShortcut))
+        return CalendarMenuSnapshot(
+            sections: sections,
+            footerRows: standardFooterRows(globalShortcut: globalShortcut)
+        )
     }
 
     private func rows(for event: CalendarEvent, showEventColors: Bool) -> [CalendarMenuRow] {
