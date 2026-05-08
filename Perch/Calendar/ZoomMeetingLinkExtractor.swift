@@ -19,7 +19,7 @@ struct ZoomMeetingLinkExtractor {
 
         for match in detector.matches(in: string, options: [], range: range) {
             guard let url = match.url,
-                  isZoomMeetingURL(url)
+                  ZoomMeetingLaunchURLBuilder.isZoomMeetingURL(url)
             else {
                 continue
             }
@@ -29,23 +29,88 @@ struct ZoomMeetingLinkExtractor {
 
         return nil
     }
+}
 
-    private func isZoomMeetingURL(_ url: URL) -> Bool {
-        let scheme = url.scheme?.lowercased()
-        if scheme == "zoommtg" || scheme == "zoomus" {
-            return true
+struct ZoomMeetingLaunchURLBuilder {
+    func launchURL(for meetingURL: URL) -> URL {
+        if Self.isNativeZoomURL(meetingURL) {
+            return meetingURL
         }
 
-        guard scheme == "http" || scheme == "https",
-              let host = url.host?.lowercased(),
-              host == "zoom.us" || host.hasSuffix(".zoom.us")
+        return nativeJoinURL(for: meetingURL) ?? meetingURL
+    }
+
+    static func isZoomMeetingURL(_ url: URL) -> Bool {
+        isNativeZoomURL(url) || (isWebZoomURL(url) && meetingIdentifier(from: url) != nil)
+    }
+
+    private func nativeJoinURL(for meetingURL: URL) -> URL? {
+        guard Self.isWebZoomURL(meetingURL),
+              let host = meetingURL.host?.lowercased(),
+              let meetingIdentifier = Self.meetingIdentifier(from: meetingURL)
+        else {
+            return nil
+        }
+
+        var components = URLComponents()
+        components.scheme = "zoommtg"
+        components.host = host
+        components.path = "/join"
+
+        var queryItems = [
+            URLQueryItem(name: "action", value: "join"),
+            URLQueryItem(name: "confno", value: meetingIdentifier)
+        ]
+
+        if let password = Self.queryValue(named: "pwd", in: meetingURL) {
+            queryItems.append(URLQueryItem(name: "pwd", value: password))
+        }
+
+        components.queryItems = queryItems
+        return components.url
+    }
+
+    private static func isNativeZoomURL(_ url: URL) -> Bool {
+        let scheme = url.scheme?.lowercased()
+        return scheme == "zoommtg" || scheme == "zoomus"
+    }
+
+    private static func isWebZoomURL(_ url: URL) -> Bool {
+        guard let scheme = url.scheme?.lowercased(),
+              scheme == "http" || scheme == "https",
+              let host = url.host?.lowercased()
         else {
             return false
         }
 
-        let path = url.path.lowercased()
-        return path.contains("/j/")
-            || path.contains("/my/")
-            || path.contains("/w/")
+        return host == "zoom.us" || host.hasSuffix(".zoom.us")
+    }
+
+    private static func meetingIdentifier(from url: URL) -> String? {
+        let pathSegments = url.path.split(separator: "/").map { segment in
+            String(segment).removingPercentEncoding ?? String(segment)
+        }
+
+        for (index, segment) in pathSegments.enumerated() {
+            let normalizedSegment = segment.lowercased()
+            guard normalizedSegment == "j" || normalizedSegment == "w" || normalizedSegment == "my" else {
+                continue
+            }
+
+            let nextIndex = index + 1
+            guard pathSegments.indices.contains(nextIndex), !pathSegments[nextIndex].isEmpty else {
+                return nil
+            }
+
+            return pathSegments[nextIndex]
+        }
+
+        return nil
+    }
+
+    private static func queryValue(named name: String, in url: URL) -> String? {
+        URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems?.first { item in
+            item.name.lowercased() == name.lowercased()
+        }?.value
     }
 }
