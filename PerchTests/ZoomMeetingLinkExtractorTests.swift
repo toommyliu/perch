@@ -3,6 +3,7 @@ import XCTest
 
 final class ZoomMeetingLinkExtractorTests: XCTestCase {
     private let extractor = ZoomMeetingLinkExtractor()
+    private let launchURLBuilder = ZoomMeetingLaunchURLBuilder()
 
     func testExtractsZoomMeetingFromLocation() {
         let url = extractor.meetingURL(from: [
@@ -31,5 +32,33 @@ final class ZoomMeetingLinkExtractorTests: XCTestCase {
         ])
 
         XCTAssertNil(url)
+    }
+
+    func testBuildsNativeLaunchURLForHTTPSMeetingLink() {
+        let launchURL = launchURLBuilder.launchURL(
+            for: URL(string: "https://school.zoom.us/j/1234567890?pwd=abc")!
+        )
+
+        XCTAssertEqual(launchURL.absoluteString, "zoommtg://school.zoom.us/join?action=join&confno=1234567890&pwd=abc")
+    }
+
+    func testFallsBackToWebURLForPersonalMeetingVanityLink() {
+        let url = URL(string: "https://us02web.zoom.us/my/professor?pwd=abc")!
+
+        XCTAssertEqual(launchURLBuilder.launchURL(for: url), url)
+    }
+
+    func testKeepsLookingForMeetingIdentifierAfterEmptySegment() {
+        let launchURL = launchURLBuilder.launchURL(
+            for: URL(string: "https://school.zoom.us/other/j//w/1234?pwd=abc")!
+        )
+
+        XCTAssertEqual(launchURL.absoluteString, "zoommtg://school.zoom.us/join?action=join&confno=1234&pwd=abc")
+    }
+
+    func testKeepsNativeZoomLaunchURLUnchanged() {
+        let url = URL(string: "zoommtg://zoom.us/join?action=join&confno=1234567890&pwd=abc")!
+
+        XCTAssertEqual(launchURLBuilder.launchURL(for: url), url)
     }
 }

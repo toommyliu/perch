@@ -11,6 +11,7 @@ final class MenuBarController: NSObject {
     private let labelFormatter = MenuBarLabelFormatter()
     private let menuBuilder = MenuBuilder()
     private let eventOpenURLBuilder = CalendarEventOpenURLBuilder()
+    private let zoomMeetingLaunchURLBuilder = ZoomMeetingLaunchURLBuilder()
     private var events: [CalendarEvent] = []
     private var isTrayMenuOpen = false
     var onTrayMenuWillOpen: (() -> Void)?
@@ -191,8 +192,9 @@ final class MenuBarController: NSObject {
             return
         }
 
+        let launchURL = zoomMeetingLaunchURLBuilder.launchURL(for: url)
         PerchLog.info("Opening Zoom meeting")
-        if !NSWorkspace.shared.open(url) {
+        if !NSWorkspace.shared.open(launchURL) {
             PerchLog.error("Could not open Zoom meeting URL")
         }
     }
