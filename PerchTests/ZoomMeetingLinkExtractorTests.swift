@@ -42,12 +42,10 @@ final class ZoomMeetingLinkExtractorTests: XCTestCase {
         XCTAssertEqual(launchURL.absoluteString, "zoommtg://school.zoom.us/join?action=join&confno=1234567890&pwd=abc")
     }
 
-    func testBuildsNativeLaunchURLForPersonalMeetingLink() {
-        let launchURL = launchURLBuilder.launchURL(
-            for: URL(string: "https://us02web.zoom.us/my/professor?pwd=abc")!
-        )
+    func testFallsBackToWebURLForPersonalMeetingVanityLink() {
+        let url = URL(string: "https://us02web.zoom.us/my/professor?pwd=abc")!
 
-        XCTAssertEqual(launchURL.absoluteString, "zoommtg://us02web.zoom.us/join?action=join&confno=professor&pwd=abc")
+        XCTAssertEqual(launchURLBuilder.launchURL(for: url), url)
     }
 
     func testKeepsLookingForMeetingIdentifierAfterEmptySegment() {

@@ -57,6 +57,12 @@ struct ZoomMeetingLaunchURLBuilder {
         components.host = host
         components.path = "/join"
 
+        // Zoom's native URL scheme requires confno to be a numeric meeting ID.
+        // Personal meeting room vanity names (/my/<name>) must fall back to the web URL.
+        guard meetingIdentifier.allSatisfy(\.isNumber) else {
+            return nil
+        }
+
         var queryItems = [
             URLQueryItem(name: "action", value: "join"),
             URLQueryItem(name: "confno", value: meetingIdentifier)
