@@ -62,7 +62,11 @@ private func acquireSingleInstanceLock() -> SingleInstanceLockResult {
             return
         }
 
-        _ = Darwin.ftruncate(fileDescriptor, 0)
+        guard Darwin.ftruncate(fileDescriptor, 0) == 0 else {
+            PerchLog.error("ftruncate on lock file failed: \(String(cString: strerror(errno)))")
+            return
+        }
+
         _ = Darwin.write(fileDescriptor, baseAddress, buffer.count)
     }
 
