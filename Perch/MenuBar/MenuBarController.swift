@@ -38,7 +38,6 @@ final class MenuBarController: NSObject {
                 await self?.refreshCalendarData()
             }
         }
-
         configureStatusItem()
         updateMenu(accessState: permissionController.refreshStatus())
         updateStatusItem()
@@ -100,16 +99,26 @@ final class MenuBarController: NSObject {
 
         switch content {
         case let .dateIcon(day):
-            statusItem.length = 32
-            button.title = ""
-            button.image = MenuIconRenderer.dateIcon(day: day)
+            setDateIcon(day: day)
             PerchLog.info("Status item set to date icon for day \(day)")
         case let .event(title, relativeText, color):
             statusItem.length = NSStatusItem.variableLength
+            button.imagePosition = .imageLeading
             button.image = color.map { MenuIconRenderer.colorBar(color: $0) }
             button.title = "\(color == nil ? "" : " ")\(title) · \(relativeText)"
             PerchLog.info("Status item set to event: \(title) · \(relativeText)")
         }
+    }
+
+    private func setDateIcon(day: Int) {
+        guard let button = statusItem.button else {
+            return
+        }
+
+        statusItem.length = 32
+        button.imagePosition = .imageOnly
+        button.title = ""
+        button.image = MenuIconRenderer.dateIcon(day: day)
     }
 
     private func updateMenu(accessState: CalendarAccessState) {
