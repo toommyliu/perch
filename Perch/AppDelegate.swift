@@ -12,6 +12,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let settingsStore = SettingsStore()
         let calendarProvider = EventKitCalendarProvider()
         let permissionController = CalendarPermissionController(permissionProvider: calendarProvider)
+        #if DEBUG
+        let dateIconDebugSettings = DateIconDebugSettings()
+        let settingsWindowController = SettingsWindowController(
+            settingsStore: settingsStore,
+            permissionController: permissionController,
+            dateIconDebugSettings: dateIconDebugSettings
+        )
+        let menuBarController = MenuBarController(
+            calendarProvider: calendarProvider,
+            permissionController: permissionController,
+            settingsStore: settingsStore,
+            settingsWindowController: settingsWindowController,
+            dateIconDebugSettings: dateIconDebugSettings
+        )
+        dateIconDebugSettings.onChange = { [weak menuBarController] in
+            menuBarController?.refreshStatusItem()
+        }
+        #else
         let settingsWindowController = SettingsWindowController(
             settingsStore: settingsStore,
             permissionController: permissionController
@@ -22,6 +40,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             settingsStore: settingsStore,
             settingsWindowController: settingsWindowController
         )
+        #endif
 
         let refreshCoordinator = CalendarRefreshCoordinator {
             menuBarController.refresh()

@@ -33,6 +33,39 @@ final class SettingsViewModel: ObservableObject {
         }
     }
 
+    #if DEBUG
+    @Published var debugDateIconOverrideEnabled: Bool {
+        didSet {
+            dateIconDebugSettings?.isOverrideEnabled = debugDateIconOverrideEnabled
+        }
+    }
+
+    @Published var debugDateIconDay: Int {
+        didSet {
+            guard !isApplyingDebugDateClamp else {
+                return
+            }
+
+            let clampedDay = min(max(debugDateIconDay, 1), 31)
+            if debugDateIconDay != clampedDay {
+                dateIconDebugSettings?.day = clampedDay
+                isApplyingDebugDateClamp = true
+                debugDateIconDay = clampedDay
+                isApplyingDebugDateClamp = false
+                return
+            }
+
+            dateIconDebugSettings?.day = debugDateIconDay
+        }
+    }
+
+    @Published var debugDateIconFontWeight: DateIconDebugFontWeight {
+        didSet {
+            dateIconDebugSettings?.fontWeight = debugDateIconFontWeight
+        }
+    }
+    #endif
+
     @Published private(set) var accessState: CalendarAccessState
     @Published private(set) var isRequestingAccess = false
     @Published private(set) var globalShortcut: GlobalShortcut
@@ -40,10 +73,41 @@ final class SettingsViewModel: ObservableObject {
 
     private let settingsStore: SettingsStore
     private let permissionController: CalendarPermissionController
+    #if DEBUG
+    private let dateIconDebugSettings: DateIconDebugSettings?
+    private var isApplyingDebugDateClamp = false
+    #endif
     private let onChange: () -> Void
     private let onShortcutChangeRequested: (GlobalShortcut) -> HotKeyRegistrationResult
     private var accessStateCancellable: AnyCancellable?
 
+    #if DEBUG
+    init(
+        settingsStore: SettingsStore,
+        permissionController: CalendarPermissionController,
+        dateIconDebugSettings: DateIconDebugSettings? = nil,
+        onShortcutChangeRequested: @escaping (GlobalShortcut) -> HotKeyRegistrationResult = { _ in .success },
+        onChange: @escaping () -> Void
+    ) {
+        self.settingsStore = settingsStore
+        self.permissionController = permissionController
+        self.dateIconDebugSettings = dateIconDebugSettings
+        self.debugDateIconOverrideEnabled = dateIconDebugSettings?.isOverrideEnabled ?? false
+        self.debugDateIconDay = dateIconDebugSettings?.day ?? Calendar.current.component(.day, from: Date())
+        self.debugDateIconFontWeight = dateIconDebugSettings?.fontWeight ?? .semibold
+        let settings = settingsStore.settings
+        self.selectedMode = settings.displayMode
+        self.lookAheadDays = settings.lookAheadDays
+        self.showEventColors = settings.showEventColors
+        self.showAllDayEvents = settings.showAllDayEvents
+        self.globalShortcut = settings.globalShortcut
+        self.accessState = permissionController.accessState
+        self.onShortcutChangeRequested = onShortcutChangeRequested
+        self.onChange = onChange
+
+        subscribeToAccessStateChanges()
+    }
+    #else
     init(
         settingsStore: SettingsStore,
         permissionController: CalendarPermissionController,
@@ -62,6 +126,11 @@ final class SettingsViewModel: ObservableObject {
         self.onShortcutChangeRequested = onShortcutChangeRequested
         self.onChange = onChange
 
+        subscribeToAccessStateChanges()
+    }
+    #endif
+
+    private func subscribeToAccessStateChanges() {
         accessStateCancellable = permissionController.$accessState
             .sink { [weak self] accessState in
                 self?.accessState = accessState
@@ -209,6 +278,38 @@ struct SettingsView: View {
                     Toggle("Show calendar colors", isOn: $model.showEventColors)
                         .labelsHidden()
                 }
+
+                #if DEBUG
+                Divider()
+                    .gridCellColumns(2)
+
+                GridRow {
+                    Text("Debug date icon")
+                    Toggle("Debug date icon", isOn: $model.debugDateIconOverrideEnabled)
+                        .labelsHidden()
+                }
+
+                GridRow {
+                    Text("Date")
+                    Stepper(value: $model.debugDateIconDay, in: 1...31) {
+                        Text("\(model.debugDateIconDay)")
+                            .frame(width: 32, alignment: .leading)
+                    }
+                    .disabled(!model.debugDateIconOverrideEnabled)
+                }
+
+                GridRow {
+                    Text("Weight")
+                    Picker("Weight", selection: $model.debugDateIconFontWeight) {
+                        ForEach(DateIconDebugFontWeight.allCases) { weight in
+                            Text(weight.displayTitle).tag(weight)
+                        }
+                    }
+                    .labelsHidden()
+                    .pickerStyle(.segmented)
+                    .disabled(!model.debugDateIconOverrideEnabled)
+                }
+                #endif
 
                 GridRow(alignment: .top) {
                     Text("Open/close menu")

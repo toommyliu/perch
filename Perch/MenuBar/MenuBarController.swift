@@ -12,11 +12,33 @@ final class MenuBarController: NSObject {
     private let menuBuilder = MenuBuilder()
     private let eventOpenURLBuilder = CalendarEventOpenURLBuilder()
     private let zoomMeetingLaunchURLBuilder = ZoomMeetingLaunchURLBuilder()
+    #if DEBUG
+    private let dateIconDebugSettings: DateIconDebugSettings
+    #endif
     private var events: [CalendarEvent] = []
     private var isTrayMenuOpen = false
     var onTrayMenuWillOpen: (() -> Void)?
     var onTrayMenuDidClose: (() -> Void)?
 
+    #if DEBUG
+    init(
+        calendarProvider: CalendarEventProviding,
+        permissionController: CalendarPermissionController,
+        settingsStore: SettingsStore,
+        settingsWindowController: SettingsWindowController,
+        dateIconDebugSettings: DateIconDebugSettings
+    ) {
+        self.calendarProvider = calendarProvider
+        self.permissionController = permissionController
+        self.settingsStore = settingsStore
+        self.settingsWindowController = settingsWindowController
+        self.dateIconDebugSettings = dateIconDebugSettings
+        self.statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
+        super.init()
+
+        finishInit()
+    }
+    #else
     init(
         calendarProvider: CalendarEventProviding,
         permissionController: CalendarPermissionController,
@@ -30,6 +52,11 @@ final class MenuBarController: NSObject {
         self.statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         super.init()
 
+        finishInit()
+    }
+    #endif
+
+    private func finishInit() {
         PerchLog.info("MenuBarController initialized")
 
         settingsWindowController.onSettingsChanged = { [weak self] in
@@ -47,6 +74,10 @@ final class MenuBarController: NSObject {
         Task {
             await refreshCalendarData()
         }
+    }
+
+    func refreshStatusItem() {
+        updateStatusItem()
     }
 
     private func configureStatusItem() {
@@ -95,6 +126,14 @@ final class MenuBarController: NSObject {
             return
         }
 
+        #if DEBUG
+        if dateIconDebugSettings.isOverrideEnabled {
+            setDateIcon(day: dateIconDebugSettings.day)
+            PerchLog.info("Status item set to debug date icon for day \(dateIconDebugSettings.day)")
+            return
+        }
+        #endif
+
         let content = labelFormatter.labelContent(events: events, settings: settingsStore.settings)
 
         switch content {
@@ -118,7 +157,14 @@ final class MenuBarController: NSObject {
         statusItem.length = 32
         button.imagePosition = .imageOnly
         button.title = ""
+        #if DEBUG
+        let options = dateIconDebugSettings.isOverrideEnabled
+            ? dateIconDebugSettings.renderOptions
+            : .defaultValue
+        button.image = MenuIconRenderer.dateIcon(day: day, options: options)
+        #else
         button.image = MenuIconRenderer.dateIcon(day: day)
+        #endif
     }
 
     private func updateMenu(accessState: CalendarAccessState) {
