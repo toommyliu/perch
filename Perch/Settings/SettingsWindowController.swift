@@ -8,21 +8,37 @@ final class SettingsWindowController: NSWindowController {
     private let settingsStore: SettingsStore
     private let permissionController: CalendarPermissionController
 
+    #if DEBUG
+    init(
+        settingsStore: SettingsStore,
+        permissionController: CalendarPermissionController,
+        dateIconDebugSettings: DateIconDebugSettings
+    ) {
+        self.settingsStore = settingsStore
+        self.permissionController = permissionController
+
+        let window = Self.makeWindow(height: 390)
+
+        super.init(window: window)
+
+        let viewModel = SettingsViewModel(
+            settingsStore: settingsStore,
+            permissionController: permissionController,
+            dateIconDebugSettings: dateIconDebugSettings,
+            onShortcutChangeRequested: { [weak self] shortcut in
+                self?.onShortcutChangeRequested?(shortcut) ?? .failure(OSStatus(-1))
+            }
+        ) { [weak self] in
+            self?.onSettingsChanged?()
+        }
+        window.contentView = NSHostingView(rootView: SettingsView(model: viewModel))
+    }
+    #else
     init(settingsStore: SettingsStore, permissionController: CalendarPermissionController) {
         self.settingsStore = settingsStore
         self.permissionController = permissionController
 
-        let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 520, height: 320),
-            styleMask: [.titled, .closable],
-            backing: .buffered,
-            defer: false
-        )
-        window.title = "Perch Settings"
-        window.center()
-        window.isReleasedWhenClosed = false
-        window.collectionBehavior = [.moveToActiveSpace, .fullScreenAuxiliary]
-        window.hidesOnDeactivate = false
+        let window = Self.makeWindow(height: 320)
 
         super.init(window: window)
 
@@ -36,6 +52,22 @@ final class SettingsWindowController: NSWindowController {
             self?.onSettingsChanged?()
         }
         window.contentView = NSHostingView(rootView: SettingsView(model: viewModel))
+    }
+    #endif
+
+    private static func makeWindow(height: CGFloat) -> NSWindow {
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 520, height: height),
+            styleMask: [.titled, .closable],
+            backing: .buffered,
+            defer: false
+        )
+        window.title = "Perch Settings"
+        window.center()
+        window.isReleasedWhenClosed = false
+        window.collectionBehavior = [.moveToActiveSpace, .fullScreenAuxiliary]
+        window.hidesOnDeactivate = false
+        return window
     }
 
     @MainActor

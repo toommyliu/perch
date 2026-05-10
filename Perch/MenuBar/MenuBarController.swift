@@ -12,11 +12,33 @@ final class MenuBarController: NSObject {
     private let menuBuilder = MenuBuilder()
     private let eventOpenURLBuilder = CalendarEventOpenURLBuilder()
     private let zoomMeetingLaunchURLBuilder = ZoomMeetingLaunchURLBuilder()
+    #if DEBUG
+    private let dateIconDebugSettings: DateIconDebugSettings
+    #endif
     private var events: [CalendarEvent] = []
     private var isTrayMenuOpen = false
     var onTrayMenuWillOpen: (() -> Void)?
     var onTrayMenuDidClose: (() -> Void)?
 
+    #if DEBUG
+    init(
+        calendarProvider: CalendarEventProviding,
+        permissionController: CalendarPermissionController,
+        settingsStore: SettingsStore,
+        settingsWindowController: SettingsWindowController,
+        dateIconDebugSettings: DateIconDebugSettings
+    ) {
+        self.calendarProvider = calendarProvider
+        self.permissionController = permissionController
+        self.settingsStore = settingsStore
+        self.settingsWindowController = settingsWindowController
+        self.dateIconDebugSettings = dateIconDebugSettings
+        self.statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
+        super.init()
+
+        finishInit()
+    }
+    #else
     init(
         calendarProvider: CalendarEventProviding,
         permissionController: CalendarPermissionController,
@@ -30,6 +52,11 @@ final class MenuBarController: NSObject {
         self.statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         super.init()
 
+        finishInit()
+    }
+    #endif
+
+    private func finishInit() {
         PerchLog.info("MenuBarController initialized")
 
         settingsWindowController.onSettingsChanged = { [weak self] in
@@ -38,7 +65,6 @@ final class MenuBarController: NSObject {
                 await self?.refreshCalendarData()
             }
         }
-
         configureStatusItem()
         updateMenu(accessState: permissionController.refreshStatus())
         updateStatusItem()
@@ -48,6 +74,10 @@ final class MenuBarController: NSObject {
         Task {
             await refreshCalendarData()
         }
+    }
+
+    func refreshStatusItem() {
+        updateStatusItem()
     }
 
     private func configureStatusItem() {
@@ -96,20 +126,45 @@ final class MenuBarController: NSObject {
             return
         }
 
+        #if DEBUG
+        if dateIconDebugSettings.isOverrideEnabled {
+            setDateIcon(day: dateIconDebugSettings.day)
+            PerchLog.info("Status item set to debug date icon for day \(dateIconDebugSettings.day)")
+            return
+        }
+        #endif
+
         let content = labelFormatter.labelContent(events: events, settings: settingsStore.settings)
 
         switch content {
         case let .dateIcon(day):
-            statusItem.length = 32
-            button.title = ""
-            button.image = MenuIconRenderer.dateIcon(day: day)
+            setDateIcon(day: day)
             PerchLog.info("Status item set to date icon for day \(day)")
         case let .event(title, relativeText, color):
             statusItem.length = NSStatusItem.variableLength
+            button.imagePosition = .imageLeading
             button.image = color.map { MenuIconRenderer.colorBar(color: $0) }
             button.title = "\(color == nil ? "" : " ")\(title) · \(relativeText)"
             PerchLog.info("Status item set to event: \(title) · \(relativeText)")
         }
+    }
+
+    private func setDateIcon(day: Int) {
+        guard let button = statusItem.button else {
+            return
+        }
+
+        statusItem.length = 32
+        button.imagePosition = .imageOnly
+        button.title = ""
+        #if DEBUG
+        let options = dateIconDebugSettings.isOverrideEnabled
+            ? dateIconDebugSettings.renderOptions
+            : .defaultValue
+        button.image = MenuIconRenderer.dateIcon(day: day, options: options)
+        #else
+        button.image = MenuIconRenderer.dateIcon(day: day)
+        #endif
     }
 
     private func updateMenu(accessState: CalendarAccessState) {

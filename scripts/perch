@@ -1,0 +1,126 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+PROJECT="Perch.xcodeproj"
+SCHEME="Perch"
+APP_NAME="Perch"
+DERIVED_DATA_PATH="build/DerivedData"
+ARTIFACTS_DIR="build/artifacts"
+
+usage() {
+  cat <<'USAGE'
+Usage: scripts/perch <command>
+
+Commands:
+  debug       Build Debug and launch Perch.app
+  release     Build Release and launch Perch.app
+  artifact    Clean-build Release and create a zipped .app artifact
+  help        Show this help
+
+Outputs:
+  Debug app:      build/DerivedData/Build/Products/Debug/Perch.app
+  Release app:    build/DerivedData/Build/Products/Release/Perch.app
+  Artifacts:      build/artifacts/Perch-<version>-<build>-<timestamp>.zip
+USAGE
+}
+
+repo_root() {
+  cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd
+}
+
+require_xcodebuild() {
+  if ! command -v xcodebuild >/dev/null 2>&1; then
+    echo "error: xcodebuild is required. Install Xcode or Xcode Command Line Tools." >&2
+    exit 1
+  fi
+}
+
+build_app() {
+  local configuration="$1"
+  xcodebuild \
+    -project "$PROJECT" \
+    -scheme "$SCHEME" \
+    -configuration "$configuration" \
+    -derivedDataPath "$DERIVED_DATA_PATH" \
+    build
+}
+
+clean_build_app() {
+  local configuration="$1"
+  xcodebuild \
+    -project "$PROJECT" \
+    -scheme "$SCHEME" \
+    -configuration "$configuration" \
+    -derivedDataPath "$DERIVED_DATA_PATH" \
+    clean build
+}
+
+app_path() {
+  local configuration="$1"
+  printf '%s/Build/Products/%s/%s.app' "$DERIVED_DATA_PATH" "$configuration" "$APP_NAME"
+}
+
+launch_app() {
+  local app="$1"
+  if [[ ! -d "$app" ]]; then
+    echo "error: app not found at $app" >&2
+    exit 1
+  fi
+
+  # Ensure the newly built bundle is launched instead of reusing any existing instance.
+  osascript -e 'tell application "Perch" to quit' >/dev/null 2>&1 || true
+  open -n "$app"
+  echo "Launched $app"
+}
+
+bundle_value() {
+  local app="$1"
+  local key="$2"
+  /usr/libexec/PlistBuddy -c "Print :$key" "$app/Contents/Info.plist" 2>/dev/null || true
+}
+
+create_artifact() {
+  local app="$1"
+  mkdir -p "$ARTIFACTS_DIR"
+
+  local version build timestamp artifact
+  version="$(bundle_value "$app" CFBundleShortVersionString)"
+  build="$(bundle_value "$app" CFBundleVersion)"
+  timestamp="$(date +%Y%m%d-%H%M%S)"
+
+  [[ -n "$version" ]] || version="0.0"
+  [[ -n "$build" ]] || build="0"
+
+  artifact="$ARTIFACTS_DIR/$APP_NAME-$version-$build-$timestamp.zip"
+  ditto -c -k --keepParent "$app" "$artifact"
+  echo "Created $artifact"
+}
+
+main() {
+  cd "$(repo_root)"
+  require_xcodebuild
+
+  case "${1:-help}" in
+    debug)
+      build_app Debug
+      launch_app "$(app_path Debug)"
+      ;;
+    release)
+      build_app Release
+      launch_app "$(app_path Release)"
+      ;;
+    artifact)
+      clean_build_app Release
+      create_artifact "$(app_path Release)"
+      ;;
+    help|-h|--help)
+      usage
+      ;;
+    *)
+      usage >&2
+      exit 2
+      ;;
+  esac
+}
+
+main "$@"

@@ -180,6 +180,84 @@ final class SettingsViewModelTests: XCTestCase {
         XCTAssertEqual(openedURLs, [CalendarPermissionController.privacySettingsURL])
     }
 
+    #if DEBUG
+    func testDebugDateIconOverrideUpdatesDebugSettingsWithoutPersistingSettings() {
+        let settingsStore = SettingsStore(userDefaults: makeDefaults())
+        let initialSettings = settingsStore.settings
+        let provider = FakePermissionProvider(state: .fullAccess)
+        let permissionController = CalendarPermissionController(permissionProvider: provider)
+        let debugSettings = DateIconDebugSettings()
+        var debugChangeCount = 0
+        var persistedSettingsChangeCount = 0
+        debugSettings.onChange = {
+            debugChangeCount += 1
+        }
+        let model = SettingsViewModel(
+            settingsStore: settingsStore,
+            permissionController: permissionController,
+            dateIconDebugSettings: debugSettings
+        ) {
+            persistedSettingsChangeCount += 1
+        }
+
+        model.debugDateIconOverrideEnabled = true
+
+        XCTAssertTrue(debugSettings.isOverrideEnabled)
+        XCTAssertEqual(debugChangeCount, 1)
+        XCTAssertEqual(persistedSettingsChangeCount, 0)
+        XCTAssertEqual(settingsStore.settings, initialSettings)
+    }
+
+    func testDebugDateIconDayClampsAndUpdatesDebugSettingsWithoutPersistingSettings() {
+        let settingsStore = SettingsStore(userDefaults: makeDefaults())
+        let initialSettings = settingsStore.settings
+        let provider = FakePermissionProvider(state: .fullAccess)
+        let permissionController = CalendarPermissionController(permissionProvider: provider)
+        let debugSettings = DateIconDebugSettings(day: 6)
+        var debugChangeCount = 0
+        debugSettings.onChange = {
+            debugChangeCount += 1
+        }
+        let model = SettingsViewModel(
+            settingsStore: settingsStore,
+            permissionController: permissionController,
+            dateIconDebugSettings: debugSettings,
+            onChange: {}
+        )
+
+        model.debugDateIconDay = 99
+
+        XCTAssertEqual(model.debugDateIconDay, 31)
+        XCTAssertEqual(debugSettings.day, 31)
+        XCTAssertEqual(debugChangeCount, 1)
+        XCTAssertEqual(settingsStore.settings, initialSettings)
+    }
+
+    func testDebugDateIconFontWeightUpdatesDebugSettingsWithoutPersistingSettings() {
+        let settingsStore = SettingsStore(userDefaults: makeDefaults())
+        let initialSettings = settingsStore.settings
+        let provider = FakePermissionProvider(state: .fullAccess)
+        let permissionController = CalendarPermissionController(permissionProvider: provider)
+        let debugSettings = DateIconDebugSettings()
+        var debugChangeCount = 0
+        debugSettings.onChange = {
+            debugChangeCount += 1
+        }
+        let model = SettingsViewModel(
+            settingsStore: settingsStore,
+            permissionController: permissionController,
+            dateIconDebugSettings: debugSettings,
+            onChange: {}
+        )
+
+        model.debugDateIconFontWeight = .semibold
+
+        XCTAssertEqual(debugSettings.fontWeight, .semibold)
+        XCTAssertEqual(debugChangeCount, 1)
+        XCTAssertEqual(settingsStore.settings, initialSettings)
+    }
+    #endif
+
     private func makeDefaults() -> UserDefaults {
         let suiteName = "PerchTests-\(UUID().uuidString)"
         let defaults = UserDefaults(suiteName: suiteName)!
