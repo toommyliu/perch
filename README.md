@@ -1,4 +1,4 @@
-# perch
+# Perch
 
 Perch is a lightweight macOS menu bar app for viewing your calendar at a glance. It focuses on a simple, read-only experience that keeps your schedule visible without opening a full calendar app.
 
