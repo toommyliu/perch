@@ -67,6 +67,109 @@ final class SettingsViewModelTests: XCTestCase {
         XCTAssertEqual(changeCount, 1)
     }
 
+    func testInitializesWithLaunchAtLoginState() {
+        let settingsStore = SettingsStore(userDefaults: makeDefaults())
+        let provider = FakePermissionProvider(state: .fullAccess)
+        let permissionController = CalendarPermissionController(permissionProvider: provider)
+        let loginItemManager = FakeLoginItemManager(isEnabled: true)
+
+        let model = SettingsViewModel(
+            settingsStore: settingsStore,
+            permissionController: permissionController,
+            loginItemManager: loginItemManager,
+            onChange: {}
+        )
+
+        XCTAssertTrue(model.launchAtLogin)
+        XCTAssertNil(model.loginItemError)
+    }
+
+    func testEnablingLaunchAtLoginUpdatesLoginItemStateWithoutNotifyingSettingsChange() {
+        let settingsStore = SettingsStore(userDefaults: makeDefaults())
+        let provider = FakePermissionProvider(state: .fullAccess)
+        let permissionController = CalendarPermissionController(permissionProvider: provider)
+        let loginItemManager = FakeLoginItemManager(isEnabled: false)
+        var changeCount = 0
+        let model = SettingsViewModel(
+            settingsStore: settingsStore,
+            permissionController: permissionController,
+            loginItemManager: loginItemManager
+        ) {
+            changeCount += 1
+        }
+
+        model.launchAtLogin = true
+
+        XCTAssertTrue(model.launchAtLogin)
+        XCTAssertTrue(loginItemManager.isEnabled)
+        XCTAssertEqual(loginItemManager.requestedStates, [true])
+        XCTAssertNil(model.loginItemError)
+        XCTAssertEqual(changeCount, 0)
+    }
+
+    func testDisablingLaunchAtLoginUpdatesLoginItemStateWithoutNotifyingSettingsChange() {
+        let settingsStore = SettingsStore(userDefaults: makeDefaults())
+        let provider = FakePermissionProvider(state: .fullAccess)
+        let permissionController = CalendarPermissionController(permissionProvider: provider)
+        let loginItemManager = FakeLoginItemManager(isEnabled: true)
+        var changeCount = 0
+        let model = SettingsViewModel(
+            settingsStore: settingsStore,
+            permissionController: permissionController,
+            loginItemManager: loginItemManager
+        ) {
+            changeCount += 1
+        }
+
+        model.launchAtLogin = false
+
+        XCTAssertFalse(model.launchAtLogin)
+        XCTAssertFalse(loginItemManager.isEnabled)
+        XCTAssertEqual(loginItemManager.requestedStates, [false])
+        XCTAssertNil(model.loginItemError)
+        XCTAssertEqual(changeCount, 0)
+    }
+
+    func testFailedLaunchAtLoginChangeRestoresLoginItemStateAndShowsError() {
+        let settingsStore = SettingsStore(userDefaults: makeDefaults())
+        let provider = FakePermissionProvider(state: .fullAccess)
+        let permissionController = CalendarPermissionController(permissionProvider: provider)
+        let loginItemManager = FakeLoginItemManager(isEnabled: false)
+        loginItemManager.error = FakeLoginItemError.updateFailed
+        let model = SettingsViewModel(
+            settingsStore: settingsStore,
+            permissionController: permissionController,
+            loginItemManager: loginItemManager,
+            onChange: {}
+        )
+
+        model.launchAtLogin = true
+
+        XCTAssertFalse(model.launchAtLogin)
+        XCTAssertFalse(loginItemManager.isEnabled)
+        XCTAssertEqual(loginItemManager.requestedStates, [true])
+        XCTAssertEqual(model.loginItemError, "Could not update launch at login.")
+    }
+
+    func testRefreshingLaunchAtLoginSyncsExternalStateWithoutUpdatingLoginItem() {
+        let settingsStore = SettingsStore(userDefaults: makeDefaults())
+        let provider = FakePermissionProvider(state: .fullAccess)
+        let permissionController = CalendarPermissionController(permissionProvider: provider)
+        let loginItemManager = FakeLoginItemManager(isEnabled: false)
+        let model = SettingsViewModel(
+            settingsStore: settingsStore,
+            permissionController: permissionController,
+            loginItemManager: loginItemManager,
+            onChange: {}
+        )
+
+        loginItemManager.isEnabled = true
+        model.refreshLaunchAtLoginState()
+
+        XCTAssertTrue(model.launchAtLogin)
+        XCTAssertEqual(loginItemManager.requestedStates, [])
+    }
+
     func testSuccessfulShortcutRecordingRegistersPersistsAndUpdatesState() {
         let settingsStore = SettingsStore(userDefaults: makeDefaults())
         let provider = FakePermissionProvider(state: .fullAccess)
@@ -312,4 +415,28 @@ final class FakePermissionProvider: CalendarPermissionProviding {
         state = requestResult
         return requestResult
     }
+}
+
+private final class FakeLoginItemManager: LoginItemManaging {
+    var isEnabled: Bool
+    var requestedStates: [Bool] = []
+    var error: Error?
+
+    init(isEnabled: Bool) {
+        self.isEnabled = isEnabled
+    }
+
+    func setEnabled(_ isEnabled: Bool) throws {
+        requestedStates.append(isEnabled)
+
+        if let error {
+            throw error
+        }
+
+        self.isEnabled = isEnabled
+    }
+}
+
+private enum FakeLoginItemError: Error {
+    case updateFailed
 }

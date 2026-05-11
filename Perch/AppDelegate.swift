@@ -12,11 +12,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let settingsStore = SettingsStore()
         let calendarProvider = EventKitCalendarProvider()
         let permissionController = CalendarPermissionController(permissionProvider: calendarProvider)
+        let loginItemManager = LoginItemManager()
         #if DEBUG
         let dateIconDebugSettings = DateIconDebugSettings()
         let settingsWindowController = SettingsWindowController(
             settingsStore: settingsStore,
             permissionController: permissionController,
+            loginItemManager: loginItemManager,
             dateIconDebugSettings: dateIconDebugSettings
         )
         let menuBarController = MenuBarController(
@@ -32,7 +34,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         #else
         let settingsWindowController = SettingsWindowController(
             settingsStore: settingsStore,
-            permissionController: permissionController
+            permissionController: permissionController,
+            loginItemManager: loginItemManager
         )
         let menuBarController = MenuBarController(
             calendarProvider: calendarProvider,

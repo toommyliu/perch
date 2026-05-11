@@ -33,6 +33,16 @@ final class SettingsViewModel: ObservableObject {
         }
     }
 
+    @Published var launchAtLogin: Bool {
+        didSet {
+            guard !isApplyingLoginItemState else {
+                return
+            }
+
+            applyLaunchAtLoginChange()
+        }
+    }
+
     #if DEBUG
     @Published var debugDateIconOverrideEnabled: Bool {
         didSet {
@@ -70,9 +80,12 @@ final class SettingsViewModel: ObservableObject {
     @Published private(set) var isRequestingAccess = false
     @Published private(set) var globalShortcut: GlobalShortcut
     @Published private(set) var shortcutError: String?
+    @Published private(set) var loginItemError: String?
 
     private let settingsStore: SettingsStore
     private let permissionController: CalendarPermissionController
+    private let loginItemManager: LoginItemManaging
+    private var isApplyingLoginItemState = false
     #if DEBUG
     private let dateIconDebugSettings: DateIconDebugSettings?
     private var isApplyingDebugDateClamp = false
@@ -85,12 +98,14 @@ final class SettingsViewModel: ObservableObject {
     init(
         settingsStore: SettingsStore,
         permissionController: CalendarPermissionController,
+        loginItemManager: LoginItemManaging = LoginItemManager(),
         dateIconDebugSettings: DateIconDebugSettings? = nil,
         onShortcutChangeRequested: @escaping (GlobalShortcut) -> HotKeyRegistrationResult = { _ in .success },
         onChange: @escaping () -> Void
     ) {
         self.settingsStore = settingsStore
         self.permissionController = permissionController
+        self.loginItemManager = loginItemManager
         self.dateIconDebugSettings = dateIconDebugSettings
         self.debugDateIconOverrideEnabled = dateIconDebugSettings?.isOverrideEnabled ?? false
         self.debugDateIconDay = dateIconDebugSettings?.day ?? Calendar.current.component(.day, from: Date())
@@ -100,6 +115,7 @@ final class SettingsViewModel: ObservableObject {
         self.lookAheadDays = settings.lookAheadDays
         self.showEventColors = settings.showEventColors
         self.showAllDayEvents = settings.showAllDayEvents
+        self.launchAtLogin = loginItemManager.isEnabled
         self.globalShortcut = settings.globalShortcut
         self.accessState = permissionController.accessState
         self.onShortcutChangeRequested = onShortcutChangeRequested
@@ -111,16 +127,19 @@ final class SettingsViewModel: ObservableObject {
     init(
         settingsStore: SettingsStore,
         permissionController: CalendarPermissionController,
+        loginItemManager: LoginItemManaging = LoginItemManager(),
         onShortcutChangeRequested: @escaping (GlobalShortcut) -> HotKeyRegistrationResult = { _ in .success },
         onChange: @escaping () -> Void
     ) {
         self.settingsStore = settingsStore
         self.permissionController = permissionController
+        self.loginItemManager = loginItemManager
         let settings = settingsStore.settings
         self.selectedMode = settings.displayMode
         self.lookAheadDays = settings.lookAheadDays
         self.showEventColors = settings.showEventColors
         self.showAllDayEvents = settings.showAllDayEvents
+        self.launchAtLogin = loginItemManager.isEnabled
         self.globalShortcut = settings.globalShortcut
         self.accessState = permissionController.accessState
         self.onShortcutChangeRequested = onShortcutChangeRequested
@@ -179,6 +198,23 @@ final class SettingsViewModel: ObservableObject {
 
     func openCalendarPrivacySettings() {
         permissionController.openPrivacySettings()
+    }
+
+    private func applyLaunchAtLoginChange() {
+        do {
+            try loginItemManager.setEnabled(launchAtLogin)
+            loginItemError = nil
+        } catch {
+            loginItemError = "Could not update launch at login."
+        }
+
+        refreshLaunchAtLoginState()
+    }
+
+    func refreshLaunchAtLoginState() {
+        isApplyingLoginItemState = true
+        launchAtLogin = loginItemManager.isEnabled
+        isApplyingLoginItemState = false
     }
 
     func recordShortcut(from event: NSEvent) {
@@ -277,6 +313,21 @@ struct SettingsView: View {
                     Text("Show calendar colors")
                     Toggle("Show calendar colors", isOn: $model.showEventColors)
                         .labelsHidden()
+                }
+
+                GridRow(alignment: .top) {
+                    Text("Launch at login")
+                    VStack(alignment: .leading, spacing: 6) {
+                        Toggle("Launch at login", isOn: $model.launchAtLogin)
+                            .labelsHidden()
+
+                        if let loginItemError = model.loginItemError {
+                            Text(loginItemError)
+                                .font(.callout)
+                                .foregroundStyle(.red)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
                 }
 
                 #if DEBUG

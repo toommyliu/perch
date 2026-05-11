@@ -7,23 +7,28 @@ final class SettingsWindowController: NSWindowController {
 
     private let settingsStore: SettingsStore
     private let permissionController: CalendarPermissionController
+    private let loginItemManager: LoginItemManaging
+    private var viewModel: SettingsViewModel?
 
     #if DEBUG
     init(
         settingsStore: SettingsStore,
         permissionController: CalendarPermissionController,
+        loginItemManager: LoginItemManaging,
         dateIconDebugSettings: DateIconDebugSettings
     ) {
         self.settingsStore = settingsStore
         self.permissionController = permissionController
+        self.loginItemManager = loginItemManager
 
-        let window = Self.makeWindow(height: 390)
+        let window = Self.makeWindow(height: 430)
 
         super.init(window: window)
 
         let viewModel = SettingsViewModel(
             settingsStore: settingsStore,
             permissionController: permissionController,
+            loginItemManager: loginItemManager,
             dateIconDebugSettings: dateIconDebugSettings,
             onShortcutChangeRequested: { [weak self] shortcut in
                 self?.onShortcutChangeRequested?(shortcut) ?? .failure(OSStatus(-1))
@@ -31,26 +36,34 @@ final class SettingsWindowController: NSWindowController {
         ) { [weak self] in
             self?.onSettingsChanged?()
         }
+        self.viewModel = viewModel
         window.contentView = NSHostingView(rootView: SettingsView(model: viewModel))
     }
     #else
-    init(settingsStore: SettingsStore, permissionController: CalendarPermissionController) {
+    init(
+        settingsStore: SettingsStore,
+        permissionController: CalendarPermissionController,
+        loginItemManager: LoginItemManaging
+    ) {
         self.settingsStore = settingsStore
         self.permissionController = permissionController
+        self.loginItemManager = loginItemManager
 
-        let window = Self.makeWindow(height: 320)
+        let window = Self.makeWindow(height: 360)
 
         super.init(window: window)
 
         let viewModel = SettingsViewModel(
             settingsStore: settingsStore,
             permissionController: permissionController,
+            loginItemManager: loginItemManager,
             onShortcutChangeRequested: { [weak self] shortcut in
                 self?.onShortcutChangeRequested?(shortcut) ?? .failure(OSStatus(-1))
             }
         ) { [weak self] in
             self?.onSettingsChanged?()
         }
+        self.viewModel = viewModel
         window.contentView = NSHostingView(rootView: SettingsView(model: viewModel))
     }
     #endif
@@ -85,6 +98,7 @@ final class SettingsWindowController: NSWindowController {
         }
 
         permissionController.refreshStatus()
+        viewModel?.refreshLaunchAtLoginState()
 
         NSApp.activate(ignoringOtherApps: true)
 
