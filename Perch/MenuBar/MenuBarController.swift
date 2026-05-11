@@ -3,7 +3,7 @@ import Foundation
 
 @MainActor
 final class MenuBarController: NSObject {
-    private static let dateIconStatusItemLength: CGFloat = 16
+    private static let dateIconStatusItemLength: CGFloat = 20
 
     private let statusItem: NSStatusItem
     private let calendarProvider: CalendarEventProviding
