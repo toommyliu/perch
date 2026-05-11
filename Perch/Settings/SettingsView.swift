@@ -211,7 +211,7 @@ final class SettingsViewModel: ObservableObject {
         refreshLaunchAtLoginState()
     }
 
-    private func refreshLaunchAtLoginState() {
+    func refreshLaunchAtLoginState() {
         isApplyingLoginItemState = true
         launchAtLogin = loginItemManager.isEnabled
         isApplyingLoginItemState = false

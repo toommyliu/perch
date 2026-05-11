@@ -8,6 +8,7 @@ final class SettingsWindowController: NSWindowController {
     private let settingsStore: SettingsStore
     private let permissionController: CalendarPermissionController
     private let loginItemManager: LoginItemManaging
+    private var viewModel: SettingsViewModel?
 
     #if DEBUG
     init(
@@ -35,6 +36,7 @@ final class SettingsWindowController: NSWindowController {
         ) { [weak self] in
             self?.onSettingsChanged?()
         }
+        self.viewModel = viewModel
         window.contentView = NSHostingView(rootView: SettingsView(model: viewModel))
     }
     #else
@@ -61,6 +63,7 @@ final class SettingsWindowController: NSWindowController {
         ) { [weak self] in
             self?.onSettingsChanged?()
         }
+        self.viewModel = viewModel
         window.contentView = NSHostingView(rootView: SettingsView(model: viewModel))
     }
     #endif
@@ -95,6 +98,7 @@ final class SettingsWindowController: NSWindowController {
         }
 
         permissionController.refreshStatus()
+        viewModel?.refreshLaunchAtLoginState()
 
         NSApp.activate(ignoringOtherApps: true)
 

@@ -151,6 +151,25 @@ final class SettingsViewModelTests: XCTestCase {
         XCTAssertEqual(model.loginItemError, "Could not update launch at login.")
     }
 
+    func testRefreshingLaunchAtLoginSyncsExternalStateWithoutUpdatingLoginItem() {
+        let settingsStore = SettingsStore(userDefaults: makeDefaults())
+        let provider = FakePermissionProvider(state: .fullAccess)
+        let permissionController = CalendarPermissionController(permissionProvider: provider)
+        let loginItemManager = FakeLoginItemManager(isEnabled: false)
+        let model = SettingsViewModel(
+            settingsStore: settingsStore,
+            permissionController: permissionController,
+            loginItemManager: loginItemManager,
+            onChange: {}
+        )
+
+        loginItemManager.isEnabled = true
+        model.refreshLaunchAtLoginState()
+
+        XCTAssertTrue(model.launchAtLogin)
+        XCTAssertEqual(loginItemManager.requestedStates, [])
+    }
+
     func testSuccessfulShortcutRecordingRegistersPersistsAndUpdatesState() {
         let settingsStore = SettingsStore(userDefaults: makeDefaults())
         let provider = FakePermissionProvider(state: .fullAccess)
