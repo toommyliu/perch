@@ -519,7 +519,7 @@ struct SettingsView: View {
 
     private var calendarSelectionHeader: some View {
         HStack(spacing: 8) {
-            Text(model.selectedCalendarIdentifiers == nil ? "All calendars" : "\(model.selectedCalendarIdentifiers?.count ?? 0) selected")
+            Text(calendarSelectionSummary)
                 .font(.callout)
                 .foregroundStyle(.secondary)
 
@@ -528,13 +528,23 @@ struct SettingsView: View {
             Button("All") {
                 model.selectAllCalendars()
             }
-            .disabled(model.selectedCalendarIdentifiers == nil)
+            .disabled(!model.accessState.isSufficientForReadingEvents || model.selectedCalendarIdentifiers == nil)
 
             Button("None") {
                 model.selectNoCalendars()
             }
-            .disabled(model.selectedCalendarIdentifiers?.isEmpty == true)
+            .disabled(!model.accessState.isSufficientForReadingEvents || model.selectedCalendarIdentifiers?.isEmpty == true)
         }
+    }
+
+    private var calendarSelectionSummary: String {
+        guard model.accessState.isSufficientForReadingEvents else {
+            return "Calendar access required"
+        }
+
+        return model.selectedCalendarIdentifiers == nil
+            ? "All calendars"
+            : "\(model.selectedCalendarIdentifiers?.count ?? 0) selected"
     }
 
     private var calendarListHeight: CGFloat {
