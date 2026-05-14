@@ -374,10 +374,11 @@ struct SettingsView: View {
                                             get: { model.isCalendarSelected(calendar) },
                                             set: { model.setCalendar(calendar, isSelected: $0) }
                                         )) {
-                                            HStack(spacing: 8) {
+                                            HStack(alignment: .top, spacing: 8) {
                                                 Circle()
                                                     .fill(Color(nsColor: calendar.color))
                                                     .frame(width: 8, height: 8)
+                                                    .padding(.top, 5)
 
                                                 VStack(alignment: .leading, spacing: 1) {
                                                     Text(calendar.title)
