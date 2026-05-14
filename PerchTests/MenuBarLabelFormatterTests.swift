@@ -208,6 +208,53 @@ final class MenuBarLabelFormatterTests: XCTestCase {
         XCTAssertEqual(content, .event(title: "CMPE172", relativeText: "in 30m", color: .systemBlue))
     }
 
+    func testEventFromUnselectedCalendarIsIgnored() {
+        let now = date(hour: 9, minute: 0)
+        let holiday = makeEvent(
+            title: "Holiday",
+            calendarIdentifier: "holidays",
+            start: date(hour: 9, minute: 30),
+            end: date(hour: 10, minute: 0)
+        )
+        let work = makeEvent(
+            title: "Standup",
+            calendarIdentifier: "work",
+            start: date(hour: 10, minute: 0),
+            end: date(hour: 10, minute: 30)
+        )
+
+        let content = formatter.labelContent(
+            events: [holiday, work],
+            settings: CalendarMenubarSettings(
+                displayMode: .within6Hours,
+                lookAheadDays: 7,
+                selectedCalendarIdentifiers: ["work"]
+            ),
+            now: now,
+            calendar: calendar
+        )
+
+        XCTAssertEqual(content, .event(title: "Standup", relativeText: "in 1h 0m", color: .systemBlue))
+    }
+
+    func testExplicitEmptyCalendarSelectionShowsDateIcon() {
+        let now = date(hour: 9, minute: 0)
+        let event = makeEvent(start: date(hour: 10, minute: 0), end: date(hour: 11, minute: 0))
+
+        let content = formatter.labelContent(
+            events: [event],
+            settings: CalendarMenubarSettings(
+                displayMode: .within6Hours,
+                lookAheadDays: 7,
+                selectedCalendarIdentifiers: []
+            ),
+            now: now,
+            calendar: calendar
+        )
+
+        XCTAssertEqual(content, .dateIcon(day: 6))
+    }
+
     func testLongTitleTruncatesWhilePreservingRelativeTime() {
         let now = date(hour: 9, minute: 0)
         let event = makeEvent(
@@ -231,6 +278,7 @@ final class MenuBarLabelFormatterTests: XCTestCase {
 
     private func makeEvent(
         title: String = "CMPE172",
+        calendarIdentifier: String = "school",
         start: Date,
         end: Date
     ) -> CalendarEvent {
@@ -241,7 +289,8 @@ final class MenuBarLabelFormatterTests: XCTestCase {
             endDate: end,
             isAllDay: false,
             calendarTitle: "School",
-            calendarColor: .systemBlue
+            calendarColor: .systemBlue,
+            calendarIdentifier: calendarIdentifier
         )
     }
 

@@ -12,6 +12,7 @@ final class SettingsStoreTests: XCTestCase {
         XCTAssertEqual(store.settings.globalShortcut, .defaultValue)
         XCTAssertTrue(store.settings.showEventColors)
         XCTAssertTrue(store.settings.showAllDayEvents)
+        XCTAssertNil(store.settings.selectedCalendarIdentifiers)
     }
 
     func testPersistedDisplayModeRoundTripsThroughUserDefaults() {
@@ -65,6 +66,26 @@ final class SettingsStoreTests: XCTestCase {
         XCTAssertFalse(reloadedStore.settings.showAllDayEvents)
     }
 
+    func testPersistedSelectedCalendarsRoundTripsThroughUserDefaults() {
+        let defaults = makeDefaults()
+        let store = SettingsStore(userDefaults: defaults)
+
+        store.updateSelectedCalendarIdentifiers(["work", "personal"])
+
+        let reloadedStore = SettingsStore(userDefaults: defaults)
+        XCTAssertEqual(reloadedStore.settings.selectedCalendarIdentifiers, ["work", "personal"])
+    }
+
+    func testExplicitEmptySelectedCalendarsRoundTripsThroughUserDefaults() {
+        let defaults = makeDefaults()
+        let store = SettingsStore(userDefaults: defaults)
+
+        store.updateSelectedCalendarIdentifiers([])
+
+        let reloadedStore = SettingsStore(userDefaults: defaults)
+        XCTAssertEqual(reloadedStore.settings.selectedCalendarIdentifiers, [])
+    }
+
     func testUnsupportedLookAheadDaysAreIgnored() {
         let defaults = makeDefaults()
         let store = SettingsStore(userDefaults: defaults)
@@ -95,6 +116,7 @@ final class SettingsStoreTests: XCTestCase {
         XCTAssertEqual(store.settings.globalShortcut, .defaultValue)
         XCTAssertTrue(store.settings.showEventColors)
         XCTAssertTrue(store.settings.showAllDayEvents)
+        XCTAssertNil(store.settings.selectedCalendarIdentifiers)
     }
 
     func testInvalidStoredGlobalShortcutFallsBackToDefaultShortcut() throws {

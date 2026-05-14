@@ -15,6 +15,7 @@ struct CalendarEvent: Identifiable {
     let isAllDay: Bool
     let calendarTitle: String
     let calendarColor: NSColor
+    let calendarIdentifier: String
     let zoomMeetingURL: URL?
     let responseStatus: CalendarEventResponseStatus?
 
@@ -26,6 +27,7 @@ struct CalendarEvent: Identifiable {
         isAllDay: Bool,
         calendarTitle: String,
         calendarColor: NSColor,
+        calendarIdentifier: String = "",
         zoomMeetingURL: URL? = nil,
         responseStatus: CalendarEventResponseStatus? = nil
     ) {
@@ -36,6 +38,7 @@ struct CalendarEvent: Identifiable {
         self.isAllDay = isAllDay
         self.calendarTitle = calendarTitle
         self.calendarColor = calendarColor
+        self.calendarIdentifier = calendarIdentifier
         self.zoomMeetingURL = zoomMeetingURL
         self.responseStatus = responseStatus
     }
@@ -50,6 +53,7 @@ extension CalendarEvent: Equatable {
             && lhs.isAllDay == rhs.isAllDay
             && lhs.calendarTitle == rhs.calendarTitle
             && lhs.calendarColor.isEqual(rhs.calendarColor)
+            && lhs.calendarIdentifier == rhs.calendarIdentifier
             && lhs.zoomMeetingURL == rhs.zoomMeetingURL
             && lhs.responseStatus == rhs.responseStatus
     }

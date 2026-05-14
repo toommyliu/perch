@@ -81,9 +81,13 @@ final class SettingsViewModel: ObservableObject {
     @Published private(set) var globalShortcut: GlobalShortcut
     @Published private(set) var shortcutError: String?
     @Published private(set) var loginItemError: String?
+    @Published private(set) var availableCalendars: [CalendarInfo] = []
+    @Published private(set) var selectedCalendarIdentifiers: Set<String>?
+    @Published private(set) var calendarLoadingError: String?
 
     private let settingsStore: SettingsStore
     private let permissionController: CalendarPermissionController
+    private let calendarProvider: CalendarEventProviding?
     private let loginItemManager: LoginItemManaging
     private var isApplyingLoginItemState = false
     #if DEBUG
@@ -92,19 +96,23 @@ final class SettingsViewModel: ObservableObject {
     #endif
     private let onChange: () -> Void
     private let onShortcutChangeRequested: (GlobalShortcut) -> HotKeyRegistrationResult
+    private let onAccessRequestCompleted: () -> Void
     private var accessStateCancellable: AnyCancellable?
 
     #if DEBUG
     init(
         settingsStore: SettingsStore,
         permissionController: CalendarPermissionController,
+        calendarProvider: CalendarEventProviding? = nil,
         loginItemManager: LoginItemManaging = LoginItemManager(),
         dateIconDebugSettings: DateIconDebugSettings? = nil,
         onShortcutChangeRequested: @escaping (GlobalShortcut) -> HotKeyRegistrationResult = { _ in .success },
+        onAccessRequestCompleted: @escaping () -> Void = {},
         onChange: @escaping () -> Void
     ) {
         self.settingsStore = settingsStore
         self.permissionController = permissionController
+        self.calendarProvider = calendarProvider
         self.loginItemManager = loginItemManager
         self.dateIconDebugSettings = dateIconDebugSettings
         self.debugDateIconOverrideEnabled = dateIconDebugSettings?.isOverrideEnabled ?? false
@@ -115,37 +123,46 @@ final class SettingsViewModel: ObservableObject {
         self.lookAheadDays = settings.lookAheadDays
         self.showEventColors = settings.showEventColors
         self.showAllDayEvents = settings.showAllDayEvents
+        self.selectedCalendarIdentifiers = settings.selectedCalendarIdentifiers
         self.launchAtLogin = loginItemManager.isEnabled
         self.globalShortcut = settings.globalShortcut
         self.accessState = permissionController.accessState
         self.onShortcutChangeRequested = onShortcutChangeRequested
+        self.onAccessRequestCompleted = onAccessRequestCompleted
         self.onChange = onChange
 
         subscribeToAccessStateChanges()
+        refreshAvailableCalendars()
     }
     #else
     init(
         settingsStore: SettingsStore,
         permissionController: CalendarPermissionController,
+        calendarProvider: CalendarEventProviding? = nil,
         loginItemManager: LoginItemManaging = LoginItemManager(),
         onShortcutChangeRequested: @escaping (GlobalShortcut) -> HotKeyRegistrationResult = { _ in .success },
+        onAccessRequestCompleted: @escaping () -> Void = {},
         onChange: @escaping () -> Void
     ) {
         self.settingsStore = settingsStore
         self.permissionController = permissionController
+        self.calendarProvider = calendarProvider
         self.loginItemManager = loginItemManager
         let settings = settingsStore.settings
         self.selectedMode = settings.displayMode
         self.lookAheadDays = settings.lookAheadDays
         self.showEventColors = settings.showEventColors
         self.showAllDayEvents = settings.showAllDayEvents
+        self.selectedCalendarIdentifiers = settings.selectedCalendarIdentifiers
         self.launchAtLogin = loginItemManager.isEnabled
         self.globalShortcut = settings.globalShortcut
         self.accessState = permissionController.accessState
         self.onShortcutChangeRequested = onShortcutChangeRequested
+        self.onAccessRequestCompleted = onAccessRequestCompleted
         self.onChange = onChange
 
         subscribeToAccessStateChanges()
+        refreshAvailableCalendars()
     }
     #endif
 
@@ -153,7 +170,68 @@ final class SettingsViewModel: ObservableObject {
         accessStateCancellable = permissionController.$accessState
             .sink { [weak self] accessState in
                 self?.accessState = accessState
+                self?.refreshAvailableCalendars()
             }
+    }
+
+    func refreshAvailableCalendars() {
+        guard accessState.isSufficientForReadingEvents else {
+            availableCalendars = []
+            calendarLoadingError = nil
+            return
+        }
+
+        guard let calendarProvider else {
+            return
+        }
+
+        Task { @MainActor [weak self] in
+            guard let self else {
+                return
+            }
+
+            do {
+                availableCalendars = try await calendarProvider.availableCalendars()
+                calendarLoadingError = nil
+            } catch {
+                availableCalendars = []
+                calendarLoadingError = "Could not load calendars."
+            }
+        }
+    }
+
+    func isCalendarSelected(_ calendar: CalendarInfo) -> Bool {
+        selectedCalendarIdentifiers?.contains(calendar.id) ?? true
+    }
+
+    func setCalendar(_ calendar: CalendarInfo, isSelected: Bool) {
+        guard !availableCalendars.isEmpty else {
+            return
+        }
+
+        var selectedIdentifiers = selectedCalendarIdentifiers ?? Set(availableCalendars.map(\.id))
+
+        if isSelected {
+            selectedIdentifiers.insert(calendar.id)
+        } else {
+            selectedIdentifiers.remove(calendar.id)
+        }
+
+        applySelectedCalendarIdentifiers(selectedIdentifiers)
+    }
+
+    func selectAllCalendars() {
+        applySelectedCalendarIdentifiers(nil)
+    }
+
+    func selectNoCalendars() {
+        applySelectedCalendarIdentifiers([])
+    }
+
+    private func applySelectedCalendarIdentifiers(_ selectedIdentifiers: Set<String>?) {
+        selectedCalendarIdentifiers = selectedIdentifiers
+        settingsStore.updateSelectedCalendarIdentifiers(selectedIdentifiers)
+        onChange()
     }
 
     var accessActionTitle: String? {
@@ -192,6 +270,8 @@ final class SettingsViewModel: ObservableObject {
 
             _ = await permissionController.requestFullAccess()
             isRequestingAccess = false
+            refreshAvailableCalendars()
+            onAccessRequestCompleted()
             onChange()
         }
     }
@@ -244,11 +324,13 @@ final class SettingsViewModel: ObservableObject {
 }
 
 struct SettingsView: View {
+    private static let contentWidth: CGFloat = 660
+
     @ObservedObject var model: SettingsViewModel
 
     var body: some View {
         Form {
-            Grid(alignment: .leading, horizontalSpacing: 16, verticalSpacing: 14) {
+            Grid(alignment: .leading, horizontalSpacing: 24, verticalSpacing: 14) {
                 GridRow(alignment: .top) {
                     Text("Calendar Access")
                     VStack(alignment: .leading, spacing: 6) {
@@ -279,6 +361,60 @@ struct SettingsView: View {
                 Divider()
                     .gridCellColumns(2)
 
+                GridRow(alignment: .top) {
+                    Text("Calendars")
+                    VStack(alignment: .leading, spacing: 8) {
+                        calendarSelectionHeader
+
+                        if let calendarLoadingError = model.calendarLoadingError {
+                            Text(calendarLoadingError)
+                                .font(.callout)
+                                .foregroundStyle(.red)
+                                .fixedSize(horizontal: false, vertical: true)
+                        } else if model.availableCalendars.isEmpty {
+                            Text(model.accessState.isSufficientForReadingEvents ? "No calendars found" : "Calendar access required")
+                                .font(.callout)
+                                .foregroundStyle(.secondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        } else {
+                            ScrollView {
+                                VStack(alignment: .leading, spacing: 6) {
+                                    ForEach(model.availableCalendars) { calendar in
+                                        Toggle(isOn: Binding(
+                                            get: { model.isCalendarSelected(calendar) },
+                                            set: { model.setCalendar(calendar, isSelected: $0) }
+                                        )) {
+                                            HStack(alignment: .top, spacing: 8) {
+                                                Circle()
+                                                    .fill(Color(nsColor: calendar.color))
+                                                    .frame(width: 8, height: 8)
+                                                    .padding(.top, 5)
+
+                                                VStack(alignment: .leading, spacing: 1) {
+                                                    Text(calendar.title)
+                                                        .lineLimit(1)
+                                                    Text(calendar.sourceTitle)
+                                                        .font(.caption)
+                                                        .foregroundStyle(.secondary)
+                                                        .lineLimit(1)
+                                                }
+                                            }
+                                        }
+                                        .toggleStyle(.checkbox)
+                                        .frame(minHeight: 34, alignment: .leading)
+                                    }
+                                }
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(.vertical, 2)
+                            }
+                            .frame(height: calendarListHeight)
+                        }
+                    }
+                }
+
+                Divider()
+                    .gridCellColumns(2)
+
                 GridRow {
                     Text("Include events")
                     Picker("Include events", selection: $model.lookAheadDays) {
@@ -292,8 +428,8 @@ struct SettingsView: View {
                 }
 
                 GridRow {
-                    Text("Preview upcoming event in menu bar")
-                    Picker("Preview upcoming event in menu bar", selection: $model.selectedMode) {
+                    Text("Menu bar preview")
+                    Picker("Menu bar preview", selection: $model.selectedMode) {
                         ForEach(MenuBarDisplayMode.allCases, id: \.self) { mode in
                             Text(mode.displayTitle).tag(mode)
                         }
@@ -388,7 +524,43 @@ struct SettingsView: View {
             }
         }
         .padding(20)
-        .frame(width: 520)
+        .frame(width: Self.contentWidth)
+    }
+
+    private var calendarSelectionHeader: some View {
+        HStack(spacing: 8) {
+            Text(calendarSelectionSummary)
+                .font(.callout)
+                .foregroundStyle(.secondary)
+
+            Spacer()
+
+            Button("All") {
+                model.selectAllCalendars()
+            }
+            .disabled(!model.accessState.isSufficientForReadingEvents || model.selectedCalendarIdentifiers == nil)
+
+            Button("None") {
+                model.selectNoCalendars()
+            }
+            .disabled(!model.accessState.isSufficientForReadingEvents || model.selectedCalendarIdentifiers?.isEmpty == true)
+        }
+    }
+
+    private var calendarSelectionSummary: String {
+        guard model.accessState.isSufficientForReadingEvents else {
+            return "Calendar access required"
+        }
+
+        return model.selectedCalendarIdentifiers == nil
+            ? "All calendars"
+            : "\(model.selectedCalendarIdentifiers?.count ?? 0) selected"
+    }
+
+    private var calendarListHeight: CGFloat {
+        let rowHeight: CGFloat = 40
+        let visibleRows = min(max(model.availableCalendars.count, 1), 4)
+        return CGFloat(visibleRows) * rowHeight
     }
 }
 

@@ -159,6 +159,7 @@ struct MenuBuilder {
         globalShortcut: GlobalShortcut = .defaultValue,
         showEventColors: Bool = true,
         showAllDayEvents: Bool = true,
+        selectedCalendarIdentifiers: Set<String>? = nil,
         now: Date = Date(),
         calendar: Calendar = .current
     ) -> CalendarMenuSnapshot {
@@ -195,6 +196,7 @@ struct MenuBuilder {
                 globalShortcut: globalShortcut,
                 showEventColors: showEventColors,
                 showAllDayEvents: showAllDayEvents,
+                selectedCalendarIdentifiers: selectedCalendarIdentifiers,
                 now: now,
                 calendar: calendar
             )
@@ -264,12 +266,28 @@ struct MenuBuilder {
         globalShortcut: GlobalShortcut,
         showEventColors: Bool,
         showAllDayEvents: Bool,
+        selectedCalendarIdentifiers: Set<String>?,
         now: Date,
         calendar: Calendar
     ) -> CalendarMenuSnapshot {
+        if selectedCalendarIdentifiers?.isEmpty == true {
+            return CalendarMenuSnapshot(
+                sections: [
+                    CalendarMenuSection(
+                        title: "",
+                        rows: [
+                            CalendarMenuRow(title: "No calendars selected", isEnabled: false, color: nil, action: nil)
+                        ]
+                    )
+                ],
+                footerRows: standardFooterRows(globalShortcut: globalShortcut)
+            )
+        }
+
         let visibleEvents = CalendarEventVisibility.upcomingEvents(
             from: events,
             includeAllDayEvents: showAllDayEvents,
+            selectedCalendarIdentifiers: selectedCalendarIdentifiers,
             now: now
         )
 

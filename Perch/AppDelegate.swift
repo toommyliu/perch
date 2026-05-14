@@ -18,6 +18,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let settingsWindowController = SettingsWindowController(
             settingsStore: settingsStore,
             permissionController: permissionController,
+            calendarProvider: calendarProvider,
             loginItemManager: loginItemManager,
             dateIconDebugSettings: dateIconDebugSettings
         )
@@ -35,6 +36,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let settingsWindowController = SettingsWindowController(
             settingsStore: settingsStore,
             permissionController: permissionController,
+            calendarProvider: calendarProvider,
             loginItemManager: loginItemManager
         )
         let menuBarController = MenuBarController(

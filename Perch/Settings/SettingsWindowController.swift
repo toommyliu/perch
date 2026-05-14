@@ -14,6 +14,7 @@ final class SettingsWindowController: NSWindowController {
     init(
         settingsStore: SettingsStore,
         permissionController: CalendarPermissionController,
+        calendarProvider: CalendarEventProviding,
         loginItemManager: LoginItemManaging,
         dateIconDebugSettings: DateIconDebugSettings
     ) {
@@ -21,17 +22,21 @@ final class SettingsWindowController: NSWindowController {
         self.permissionController = permissionController
         self.loginItemManager = loginItemManager
 
-        let window = Self.makeWindow(height: 430)
+        let window = Self.makeWindow(height: 590)
 
         super.init(window: window)
 
         let viewModel = SettingsViewModel(
             settingsStore: settingsStore,
             permissionController: permissionController,
+            calendarProvider: calendarProvider,
             loginItemManager: loginItemManager,
             dateIconDebugSettings: dateIconDebugSettings,
             onShortcutChangeRequested: { [weak self] shortcut in
                 self?.onShortcutChangeRequested?(shortcut) ?? .failure(OSStatus(-1))
+            },
+            onAccessRequestCompleted: { [weak self] in
+                self?.restoreAfterAccessRequest()
             }
         ) { [weak self] in
             self?.onSettingsChanged?()
@@ -43,22 +48,27 @@ final class SettingsWindowController: NSWindowController {
     init(
         settingsStore: SettingsStore,
         permissionController: CalendarPermissionController,
+        calendarProvider: CalendarEventProviding,
         loginItemManager: LoginItemManaging
     ) {
         self.settingsStore = settingsStore
         self.permissionController = permissionController
         self.loginItemManager = loginItemManager
 
-        let window = Self.makeWindow(height: 360)
+        let window = Self.makeWindow(height: 520)
 
         super.init(window: window)
 
         let viewModel = SettingsViewModel(
             settingsStore: settingsStore,
             permissionController: permissionController,
+            calendarProvider: calendarProvider,
             loginItemManager: loginItemManager,
             onShortcutChangeRequested: { [weak self] shortcut in
                 self?.onShortcutChangeRequested?(shortcut) ?? .failure(OSStatus(-1))
+            },
+            onAccessRequestCompleted: { [weak self] in
+                self?.restoreAfterAccessRequest()
             }
         ) { [weak self] in
             self?.onSettingsChanged?()
@@ -70,7 +80,7 @@ final class SettingsWindowController: NSWindowController {
 
     private static func makeWindow(height: CGFloat) -> NSWindow {
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 520, height: height),
+            contentRect: NSRect(x: 0, y: 0, width: 660, height: height),
             styleMask: [.titled, .closable],
             backing: .buffered,
             defer: false
@@ -85,6 +95,20 @@ final class SettingsWindowController: NSWindowController {
 
     @MainActor
     func present() {
+        permissionController.refreshStatus()
+        viewModel?.refreshLaunchAtLoginState()
+        viewModel?.refreshAvailableCalendars()
+
+        orderWindowFront()
+    }
+
+    @MainActor
+    private func restoreAfterAccessRequest() {
+        orderWindowFront()
+    }
+
+    @MainActor
+    private func orderWindowFront() {
         guard let window else {
             return
         }
@@ -97,11 +121,7 @@ final class SettingsWindowController: NSWindowController {
             window.center()
         }
 
-        permissionController.refreshStatus()
-        viewModel?.refreshLaunchAtLoginState()
-
         NSApp.activate(ignoringOtherApps: true)
-
         window.level = .floating
         showWindow(nil)
         window.orderFrontRegardless()

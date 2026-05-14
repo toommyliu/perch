@@ -4,11 +4,14 @@ enum CalendarEventVisibility {
     static func upcomingEvents(
         from events: [CalendarEvent],
         includeAllDayEvents: Bool,
+        selectedCalendarIdentifiers: Set<String>? = nil,
         now: Date
     ) -> [CalendarEvent] {
         events
             .filter { event in
-                event.endDate >= now && (includeAllDayEvents || !event.isAllDay)
+                event.endDate >= now
+                    && (includeAllDayEvents || !event.isAllDay)
+                    && (selectedCalendarIdentifiers?.contains(event.calendarIdentifier) ?? true)
             }
             .sorted(by: isOrderedBefore)
     }
