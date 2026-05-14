@@ -314,11 +314,13 @@ final class SettingsViewModel: ObservableObject {
 }
 
 struct SettingsView: View {
+    private static let contentWidth: CGFloat = 660
+
     @ObservedObject var model: SettingsViewModel
 
     var body: some View {
         Form {
-            Grid(alignment: .leading, horizontalSpacing: 16, verticalSpacing: 14) {
+            Grid(alignment: .leading, horizontalSpacing: 24, verticalSpacing: 14) {
                 GridRow(alignment: .top) {
                     Text("Calendar Access")
                     VStack(alignment: .leading, spacing: 6) {
@@ -411,8 +413,8 @@ struct SettingsView: View {
                 }
 
                 GridRow {
-                    Text("Preview upcoming event in menu bar")
-                    Picker("Preview upcoming event in menu bar", selection: $model.selectedMode) {
+                    Text("Menu bar preview")
+                    Picker("Menu bar preview", selection: $model.selectedMode) {
                         ForEach(MenuBarDisplayMode.allCases, id: \.self) { mode in
                             Text(mode.displayTitle).tag(mode)
                         }
@@ -507,7 +509,7 @@ struct SettingsView: View {
             }
         }
         .padding(20)
-        .frame(width: 520)
+        .frame(width: Self.contentWidth)
     }
 
     private var calendarSelectionHeader: some View {
