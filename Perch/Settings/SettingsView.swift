@@ -205,6 +205,10 @@ final class SettingsViewModel: ObservableObject {
     }
 
     func setCalendar(_ calendar: CalendarInfo, isSelected: Bool) {
+        guard !availableCalendars.isEmpty else {
+            return
+        }
+
         var selectedIdentifiers = selectedCalendarIdentifiers ?? Set(availableCalendars.map(\.id))
 
         if isSelected {
