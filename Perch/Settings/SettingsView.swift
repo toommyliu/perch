@@ -381,18 +381,22 @@ struct SettingsView: View {
 
                                                 VStack(alignment: .leading, spacing: 1) {
                                                     Text(calendar.title)
+                                                        .lineLimit(1)
                                                     Text(calendar.sourceTitle)
                                                         .font(.caption)
                                                         .foregroundStyle(.secondary)
+                                                        .lineLimit(1)
                                                 }
                                             }
                                         }
                                         .toggleStyle(.checkbox)
+                                        .frame(minHeight: 34, alignment: .leading)
                                     }
                                 }
                                 .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(.vertical, 2)
                             }
-                            .frame(maxHeight: 150)
+                            .frame(height: calendarListHeight)
                         }
                     }
                 }
@@ -530,6 +534,12 @@ struct SettingsView: View {
             }
             .disabled(model.selectedCalendarIdentifiers?.isEmpty == true)
         }
+    }
+
+    private var calendarListHeight: CGFloat {
+        let rowHeight: CGFloat = 40
+        let visibleRows = min(max(model.availableCalendars.count, 1), 4)
+        return CGFloat(visibleRows) * rowHeight
     }
 }
 

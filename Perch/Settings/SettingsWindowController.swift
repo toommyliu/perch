@@ -22,7 +22,7 @@ final class SettingsWindowController: NSWindowController {
         self.permissionController = permissionController
         self.loginItemManager = loginItemManager
 
-        let window = Self.makeWindow(height: 560)
+        let window = Self.makeWindow(height: 590)
 
         super.init(window: window)
 
@@ -52,7 +52,7 @@ final class SettingsWindowController: NSWindowController {
         self.permissionController = permissionController
         self.loginItemManager = loginItemManager
 
-        let window = Self.makeWindow(height: 490)
+        let window = Self.makeWindow(height: 520)
 
         super.init(window: window)
 
