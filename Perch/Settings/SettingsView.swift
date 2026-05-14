@@ -96,6 +96,7 @@ final class SettingsViewModel: ObservableObject {
     #endif
     private let onChange: () -> Void
     private let onShortcutChangeRequested: (GlobalShortcut) -> HotKeyRegistrationResult
+    private let onAccessRequestCompleted: () -> Void
     private var accessStateCancellable: AnyCancellable?
 
     #if DEBUG
@@ -106,6 +107,7 @@ final class SettingsViewModel: ObservableObject {
         loginItemManager: LoginItemManaging = LoginItemManager(),
         dateIconDebugSettings: DateIconDebugSettings? = nil,
         onShortcutChangeRequested: @escaping (GlobalShortcut) -> HotKeyRegistrationResult = { _ in .success },
+        onAccessRequestCompleted: @escaping () -> Void = {},
         onChange: @escaping () -> Void
     ) {
         self.settingsStore = settingsStore
@@ -126,6 +128,7 @@ final class SettingsViewModel: ObservableObject {
         self.globalShortcut = settings.globalShortcut
         self.accessState = permissionController.accessState
         self.onShortcutChangeRequested = onShortcutChangeRequested
+        self.onAccessRequestCompleted = onAccessRequestCompleted
         self.onChange = onChange
 
         subscribeToAccessStateChanges()
@@ -138,6 +141,7 @@ final class SettingsViewModel: ObservableObject {
         calendarProvider: CalendarEventProviding? = nil,
         loginItemManager: LoginItemManaging = LoginItemManager(),
         onShortcutChangeRequested: @escaping (GlobalShortcut) -> HotKeyRegistrationResult = { _ in .success },
+        onAccessRequestCompleted: @escaping () -> Void = {},
         onChange: @escaping () -> Void
     ) {
         self.settingsStore = settingsStore
@@ -154,6 +158,7 @@ final class SettingsViewModel: ObservableObject {
         self.globalShortcut = settings.globalShortcut
         self.accessState = permissionController.accessState
         self.onShortcutChangeRequested = onShortcutChangeRequested
+        self.onAccessRequestCompleted = onAccessRequestCompleted
         self.onChange = onChange
 
         subscribeToAccessStateChanges()
@@ -262,6 +267,7 @@ final class SettingsViewModel: ObservableObject {
             _ = await permissionController.requestFullAccess()
             isRequestingAccess = false
             refreshAvailableCalendars()
+            onAccessRequestCompleted()
             onChange()
         }
     }

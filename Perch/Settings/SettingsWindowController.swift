@@ -34,6 +34,9 @@ final class SettingsWindowController: NSWindowController {
             dateIconDebugSettings: dateIconDebugSettings,
             onShortcutChangeRequested: { [weak self] shortcut in
                 self?.onShortcutChangeRequested?(shortcut) ?? .failure(OSStatus(-1))
+            },
+            onAccessRequestCompleted: { [weak self] in
+                self?.restoreAfterAccessRequest()
             }
         ) { [weak self] in
             self?.onSettingsChanged?()
@@ -63,6 +66,9 @@ final class SettingsWindowController: NSWindowController {
             loginItemManager: loginItemManager,
             onShortcutChangeRequested: { [weak self] shortcut in
                 self?.onShortcutChangeRequested?(shortcut) ?? .failure(OSStatus(-1))
+            },
+            onAccessRequestCompleted: { [weak self] in
+                self?.restoreAfterAccessRequest()
             }
         ) { [weak self] in
             self?.onSettingsChanged?()
@@ -89,6 +95,20 @@ final class SettingsWindowController: NSWindowController {
 
     @MainActor
     func present() {
+        permissionController.refreshStatus()
+        viewModel?.refreshLaunchAtLoginState()
+        viewModel?.refreshAvailableCalendars()
+
+        orderWindowFront()
+    }
+
+    @MainActor
+    private func restoreAfterAccessRequest() {
+        orderWindowFront()
+    }
+
+    @MainActor
+    private func orderWindowFront() {
         guard let window else {
             return
         }
@@ -101,12 +121,7 @@ final class SettingsWindowController: NSWindowController {
             window.center()
         }
 
-        permissionController.refreshStatus()
-        viewModel?.refreshLaunchAtLoginState()
-        viewModel?.refreshAvailableCalendars()
-
         NSApp.activate(ignoringOtherApps: true)
-
         window.level = .floating
         showWindow(nil)
         window.orderFrontRegardless()
