@@ -44,6 +44,7 @@ struct MenuBarLabelFormatter {
               let nextEvent = CalendarEventVisibility.upcomingEvents(
                 from: events,
                 includeAllDayEvents: settings.showAllDayEvents,
+                selectedCalendarIdentifiers: settings.selectedCalendarIdentifiers,
                 now: now
               ).first
         else {

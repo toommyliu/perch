@@ -115,6 +115,42 @@ final class MenuBuilderTests: XCTestCase {
         XCTAssertEqual(snapshot.sections[0].rows.map(\.title), ["10:00 AM · Timed"])
     }
 
+    func testEventsFromUnselectedCalendarsAreExcluded() {
+        let now = date(day: 6, hour: 9, minute: 0)
+        let events = [
+            event(title: "Work Standup", calendarIdentifier: "work", start: date(day: 6, hour: 10, minute: 0), end: date(day: 6, hour: 11, minute: 0)),
+            event(title: "Holiday", calendarIdentifier: "holidays", start: date(day: 6, hour: 10, minute: 0), end: date(day: 6, hour: 11, minute: 0))
+        ]
+
+        let snapshot = builder.snapshot(
+            accessState: .fullAccess,
+            events: events,
+            selectedCalendarIdentifiers: ["work"],
+            now: now,
+            calendar: calendar
+        )
+
+        XCTAssertEqual(snapshot.sections[0].rows.map(\.title), ["10:00 AM · Work Standup"])
+    }
+
+    func testExplicitEmptyCalendarSelectionShowsNoCalendarsSelected() {
+        let now = date(day: 6, hour: 9, minute: 0)
+        let events = [
+            event(title: "Work Standup", calendarIdentifier: "work", start: date(day: 6, hour: 10, minute: 0), end: date(day: 6, hour: 11, minute: 0))
+        ]
+
+        let snapshot = builder.snapshot(
+            accessState: .fullAccess,
+            events: events,
+            selectedCalendarIdentifiers: [],
+            now: now,
+            calendar: calendar
+        )
+
+        XCTAssertEqual(snapshot.sections[0].rows.map(\.title), ["No calendars selected"])
+        XCTAssertFalse(snapshot.sections[0].rows[0].isEnabled)
+    }
+
     func testEventRowsUseMutedWhiteColorWhenCalendarColorsAreDisabled() {
         let now = date(day: 6, hour: 9, minute: 0)
         let events = [
@@ -451,7 +487,12 @@ final class MenuBuilderTests: XCTestCase {
         XCTAssertEqual(target.closeMenuCount, 2)
     }
 
-    private func event(title: String, start: Date, end: Date) -> CalendarEvent {
+    private func event(
+        title: String,
+        calendarIdentifier: String = "school",
+        start: Date,
+        end: Date
+    ) -> CalendarEvent {
         CalendarEvent(
             id: UUID().uuidString,
             title: title,
@@ -459,7 +500,8 @@ final class MenuBuilderTests: XCTestCase {
             endDate: end,
             isAllDay: false,
             calendarTitle: "School",
-            calendarColor: .systemBlue
+            calendarColor: .systemBlue,
+            calendarIdentifier: calendarIdentifier
         )
     }
 

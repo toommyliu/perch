@@ -6,6 +6,7 @@ struct CalendarMenubarSettings: Codable, Equatable {
     var globalShortcut: GlobalShortcut
     var showEventColors: Bool
     var showAllDayEvents: Bool
+    var selectedCalendarIdentifiers: Set<String>?
 
     static let supportedLookAheadDays = [1, 3, 7, 14, 30]
 
@@ -14,7 +15,8 @@ struct CalendarMenubarSettings: Codable, Equatable {
         lookAheadDays: 3,
         globalShortcut: .defaultValue,
         showEventColors: true,
-        showAllDayEvents: true
+        showAllDayEvents: true,
+        selectedCalendarIdentifiers: nil
     )
 
     init(
@@ -22,13 +24,15 @@ struct CalendarMenubarSettings: Codable, Equatable {
         lookAheadDays: Int,
         globalShortcut: GlobalShortcut = .defaultValue,
         showEventColors: Bool = true,
-        showAllDayEvents: Bool = true
+        showAllDayEvents: Bool = true,
+        selectedCalendarIdentifiers: Set<String>? = nil
     ) {
         self.displayMode = displayMode
         self.lookAheadDays = lookAheadDays
         self.globalShortcut = globalShortcut.isValid ? globalShortcut : .defaultValue
         self.showEventColors = showEventColors
         self.showAllDayEvents = showAllDayEvents
+        self.selectedCalendarIdentifiers = selectedCalendarIdentifiers
     }
 
     init(from decoder: Decoder) throws {
@@ -39,13 +43,15 @@ struct CalendarMenubarSettings: Codable, Equatable {
         let globalShortcut = decodedShortcut.flatMap { $0 } ?? .defaultValue
         let showEventColors = try container.decodeIfPresent(Bool.self, forKey: .showEventColors) ?? true
         let showAllDayEvents = try container.decodeIfPresent(Bool.self, forKey: .showAllDayEvents) ?? true
+        let selectedCalendarIdentifiers = try container.decodeIfPresent(Set<String>.self, forKey: .selectedCalendarIdentifiers)
 
         self.init(
             displayMode: displayMode,
             lookAheadDays: lookAheadDays,
             globalShortcut: globalShortcut,
             showEventColors: showEventColors,
-            showAllDayEvents: showAllDayEvents
+            showAllDayEvents: showAllDayEvents,
+            selectedCalendarIdentifiers: selectedCalendarIdentifiers
         )
     }
 }
@@ -113,6 +119,12 @@ final class SettingsStore {
     func updateShowAllDayEvents(_ showAllDayEvents: Bool) {
         var currentSettings = settings
         currentSettings.showAllDayEvents = showAllDayEvents
+        settings = currentSettings
+    }
+
+    func updateSelectedCalendarIdentifiers(_ selectedCalendarIdentifiers: Set<String>?) {
+        var currentSettings = settings
+        currentSettings.selectedCalendarIdentifiers = selectedCalendarIdentifiers
         settings = currentSettings
     }
 }

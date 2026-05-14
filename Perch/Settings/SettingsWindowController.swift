@@ -14,6 +14,7 @@ final class SettingsWindowController: NSWindowController {
     init(
         settingsStore: SettingsStore,
         permissionController: CalendarPermissionController,
+        calendarProvider: CalendarEventProviding,
         loginItemManager: LoginItemManaging,
         dateIconDebugSettings: DateIconDebugSettings
     ) {
@@ -21,13 +22,14 @@ final class SettingsWindowController: NSWindowController {
         self.permissionController = permissionController
         self.loginItemManager = loginItemManager
 
-        let window = Self.makeWindow(height: 430)
+        let window = Self.makeWindow(height: 560)
 
         super.init(window: window)
 
         let viewModel = SettingsViewModel(
             settingsStore: settingsStore,
             permissionController: permissionController,
+            calendarProvider: calendarProvider,
             loginItemManager: loginItemManager,
             dateIconDebugSettings: dateIconDebugSettings,
             onShortcutChangeRequested: { [weak self] shortcut in
@@ -43,19 +45,21 @@ final class SettingsWindowController: NSWindowController {
     init(
         settingsStore: SettingsStore,
         permissionController: CalendarPermissionController,
+        calendarProvider: CalendarEventProviding,
         loginItemManager: LoginItemManaging
     ) {
         self.settingsStore = settingsStore
         self.permissionController = permissionController
         self.loginItemManager = loginItemManager
 
-        let window = Self.makeWindow(height: 360)
+        let window = Self.makeWindow(height: 490)
 
         super.init(window: window)
 
         let viewModel = SettingsViewModel(
             settingsStore: settingsStore,
             permissionController: permissionController,
+            calendarProvider: calendarProvider,
             loginItemManager: loginItemManager,
             onShortcutChangeRequested: { [weak self] shortcut in
                 self?.onShortcutChangeRequested?(shortcut) ?? .failure(OSStatus(-1))
@@ -99,6 +103,7 @@ final class SettingsWindowController: NSWindowController {
 
         permissionController.refreshStatus()
         viewModel?.refreshLaunchAtLoginState()
+        viewModel?.refreshAvailableCalendars()
 
         NSApp.activate(ignoringOtherApps: true)
 

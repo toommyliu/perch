@@ -42,8 +42,32 @@ final class EventKitCalendarProvider: CalendarProviding {
         return granted ? .fullAccess : authorizationState()
     }
 
-    func events(from startDate: Date, to endDate: Date) async throws -> [CalendarEvent] {
+    func availableCalendars() async throws -> [CalendarInfo] {
+        eventStore.calendars(for: .event)
+            .map { calendar in
+                CalendarInfo(
+                    id: calendar.calendarIdentifier,
+                    title: calendar.title,
+                    sourceTitle: calendar.source.title,
+                    color: NSColor(cgColor: calendar.cgColor) ?? .controlAccentColor
+                )
+            }
+            .sorted(by: Self.isOrderedBefore)
+    }
+
+    func events(
+        from startDate: Date,
+        to endDate: Date,
+        calendarIdentifiers: Set<String>?
+    ) async throws -> [CalendarEvent] {
+        if calendarIdentifiers?.isEmpty == true {
+            return []
+        }
+
         let calendars = eventStore.calendars(for: .event)
+            .filter { calendar in
+                calendarIdentifiers?.contains(calendar.calendarIdentifier) ?? true
+            }
         let predicate = eventStore.predicateForEvents(withStart: startDate, end: endDate, calendars: calendars)
 
         return eventStore.events(matching: predicate)
@@ -57,6 +81,7 @@ final class EventKitCalendarProvider: CalendarProviding {
                     isAllDay: event.isAllDay,
                     calendarTitle: event.calendar.title,
                     calendarColor: NSColor(cgColor: event.calendar.cgColor) ?? .controlAccentColor,
+                    calendarIdentifier: event.calendar.calendarIdentifier,
                     zoomMeetingURL: zoomMeetingLinkExtractor.meetingURL(from: [
                         event.url?.absoluteString,
                         event.location,
@@ -76,6 +101,20 @@ final class EventKitCalendarProvider: CalendarProviding {
 
                 return $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending
             }
+    }
+
+    private static func isOrderedBefore(_ lhs: CalendarInfo, _ rhs: CalendarInfo) -> Bool {
+        let sourceComparison = lhs.sourceTitle.localizedCaseInsensitiveCompare(rhs.sourceTitle)
+        if sourceComparison != .orderedSame {
+            return sourceComparison == .orderedAscending
+        }
+
+        let titleComparison = lhs.title.localizedCaseInsensitiveCompare(rhs.title)
+        if titleComparison != .orderedSame {
+            return titleComparison == .orderedAscending
+        }
+
+        return lhs.id < rhs.id
     }
 
     private static func responseStatus(for event: EKEvent) -> CalendarEventResponseStatus? {

@@ -114,7 +114,11 @@ final class MenuBarController: NSObject {
         let endDate = calendar.date(byAdding: .day, value: settings.lookAheadDays, to: startDate) ?? now.addingTimeInterval(7 * 24 * 60 * 60)
 
         do {
-            events = try await calendarProvider.events(from: startDate, to: endDate)
+            events = try await calendarProvider.events(
+                from: startDate,
+                to: endDate,
+                calendarIdentifiers: settings.selectedCalendarIdentifiers
+            )
             PerchLog.info("Fetched \(events.count) events")
         } catch {
             events = []
@@ -208,7 +212,8 @@ final class MenuBarController: NSObject {
             events: events,
             globalShortcut: settings.globalShortcut,
             showEventColors: settings.showEventColors,
-            showAllDayEvents: settings.showAllDayEvents
+            showAllDayEvents: settings.showAllDayEvents,
+            selectedCalendarIdentifiers: settings.selectedCalendarIdentifiers
         )
         let menu = menuBuilder.makeMenu(from: snapshot, target: self)
         menu.delegate = self
